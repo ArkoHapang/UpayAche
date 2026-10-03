@@ -1,0 +1,43 @@
+{
+  "model_name": "isolation_forest_behavioral_engine",
+  "model_version": "v1.0.0",
+  "algorithm": "IsolationForest",
+  "paradigm": "unsupervised_anomaly_detection",
+  "contamination": 0.1,
+  "trained_at": "2026-10-01T21:29:40.510893+00:00",
+  "train_samples": 2497,
+  "feature_count": 11,
+  "feature_names": [
+    "amount",
+    "amount_deviation",
+    "transaction_frequency",
+    "transaction_hour",
+    "is_nocturnal",
+    "new_device",
+    "device_change",
+    "new_location",
+    "new_recipient",
+    "velocity_5min",
+    "velocity_1hour"
+  ],
+  "hyperparameters": {
+    "n_estimators": 150,
+    "contamination": 0.1,
+    "max_samples": "auto",
+    "bootstrap": false,
+    "random_state": 42
+  },
+  "score_calibration": {
+    "method": "decision_function_linear_scaling",
+    "formula": "clip(0.5 - (decision_function / 0.5), 0.0, 1.0)",
+    "decision_threshold": 0.5
+  },
+  "training_metrics": {
+    "precision": 0.936,
+    "recall": 0.629,
+    "f1_score": 0.7524,
+    "detected_anomalies": 250,
+    "mean_normal_score": 0.1614,
+    "mean_anomaly_score": 0.5458
+  }
+}

@@ -1,0 +1,216 @@
+/**
+ * UpayAche Fintech Design System — Centralized Design Tokens
+ * 
+ * Inspired by upay (https://www.upaybd.com/) & modern fintech design systems.
+ * Prototype for DIU CPC × upay AI Hackathon 2026.
+ */
+
+:root {
+  /* ==========================================================================
+     CANONICAL UPAY BRAND PALETTE
+     ========================================================================== */
+  --upay-primary: #007BFF;       /* Upay Primary Electric Blue */
+  --upay-secondary: #6C757D;     /* Upay Secondary Slate Gray */
+  --upay-text-primary: #000000;  /* Upay Primary Body Text */
+  --upay-text-dark: #4E4E50;     /* Upay Secondary Dark Neutral */
+  --upay-blue-dark: #0054A6;     /* Upay Deep Navy Blue */
+  --upay-accent: #FFD602;        /* Upay Signature Golden Yellow */
+  --upay-border: #CED4DA;        /* Upay Neutral Border */
+  --upay-text-light: #EDF0F3;    /* Upay Muted Background Tint */
+  --upay-surface-light: #F6F6F6; /* Upay Primary Surface Tint */
+  --upay-white: #FFFFFF;         /* Pure Surface White */
+
+  /* ==========================================================================
+     RISK INTELLIGENCE SEMANTIC PALETTE
+     (Preserved for MFS financial crime, fraud, and anomaly detection)
+     ========================================================================== */
+  --risk-low: #10B981;
+  --risk-low-bg: #ECFDF5;
+  --risk-low-border: #A7F3D0;
+  --risk-low-text: #065F46;
+
+  --risk-medium: #F59E0B;
+  --risk-medium-bg: #FFFBEB;
+  --risk-medium-border: #FDE68A;
+  --risk-medium-text: #92400E;
+
+  --risk-high: #EA580C;
+  --risk-high-bg: #FFF7ED;
+  --risk-high-border: #FED7AA;
+  --risk-high-text: #9A3412;
+
+  --risk-critical: #DC2626;
+  --risk-critical-bg: #FEF2F2;
+  --risk-critical-border: #FECACA;
+  --risk-critical-text: #7F1D1D;
+
+  /* General Feedback Status */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #DC2626;
+  --color-info: #007BFF;
+
+  /* Investigation State Tokens */
+  --state-open-bg: #EFF6FF;
+  --state-open-border: #BFDBFE;
+  --state-open-text: #0054A6;
+
+  --state-investigating-bg: #F5F3FF;
+  --state-investigating-border: #DDD6FE;
+  --state-investigating-text: #5B21B6;
+
+  --state-reviewed-bg: #F0FDFA;
+  --state-reviewed-border: #99F6E4;
+  --state-reviewed-text: #115E59;
+
+  --state-closed-bg: #F1F5F9;
+  --state-closed-border: #CBD5E1;
+  --state-closed-text: #4E4E50;
+
+  /* ==========================================================================
+     TYPOGRAPHY SCALE & WEIGHTS
+     Preferred: Acephimere Bold, Acephimere, Inter, sans-serif
+     ========================================================================== */
+  --font-family-base: "Acephimere", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-bold: "Acephimere Bold", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  --font-size-xs: 12px;
+  --line-height-xs: 16px;
+
+  --font-size-sm: 14px;
+  --line-height-sm: 20px;
+
+  --font-size-base: 16px;
+  --line-height-base: 24px;
+
+  --font-size-lg: 18px;
+  --line-height-lg: 28px;
+
+  --font-size-xl: 24px;
+  --line-height-xl: 32px;
+
+  --font-size-2xl: 36px;
+  --line-height-2xl: 40px;
+
+  --font-size-3xl: 48px;
+  --line-height-3xl: 56px;
+
+  /* ==========================================================================
+     4PX BASE GRID SPACING TOKENS
+     ========================================================================== */
+  --space-0: 0px;
+  --space-1: 4px;   /* 4px */
+  --space-2: 8px;   /* 8px */
+  --space-3: 12px;  /* 12px */
+  --space-4: 16px;  /* 16px */
+  --space-5: 20px;  /* 20px */
+  --space-6: 24px;  /* 24px */
+  --space-7: 28px;  /* 28px */
+  --space-8: 32px;  /* 32px */
+  --space-9: 36px;  /* 36px */
+  --space-10: 40px; /* 40px */
+  --space-12: 48px; /* 48px */
+  --space-16: 64px; /* 64px */
+  --space-20: 80px; /* 80px */
+  --space-24: 96px; /* 96px */
+
+  /* ==========================================================================
+     SHAPES (CANONICAL RADII)
+     radius-sm: 0px 6px 6px 0px
+     radius-md: 6px 0px 0px 6px
+     radius-lg: 20px
+     radius-xl: 30px
+     radius-full: 50%
+     ========================================================================== */
+  --radius-sm: 0px 6px 6px 0px;
+  --radius-md: 6px 0px 0px 6px;
+  --radius-lg: 20px;
+  --radius-xl: 30px;
+  --radius-full: 50%;
+  --radius-rounded: 9999px;
+
+  /* Standard component radius fallback */
+  --radius-subtle: 8px;
+  --radius-card: 16px;
+  --radius-modal: 20px;
+
+  /* ==========================================================================
+     ELEVATION (SHADOWS)
+     shadow-sm: rgba(0,0,0,0.25) 0px 2px 4px 0px
+     shadow-md: rgba(0,0,0,0.25) 0px 4px 10px 0px
+     ========================================================================== */
+  --shadow-sm: 0px 2px 4px 0px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0px 4px 10px 0px rgba(0, 0, 0, 0.25);
+  --shadow-card: 0px 2px 8px 0px rgba(0, 0, 0, 0.08);
+  --shadow-popover: 0px 8px 24px 0px rgba(0, 0, 0, 0.16);
+
+  /* ==========================================================================
+     MOTION & TRANSITIONS
+     Fast: 150-200ms
+     Base: 200-300ms
+     Slow: 500ms
+     ========================================================================== */
+  --motion-duration-fast: 180ms;
+  --motion-duration-base: 260ms;
+  --motion-duration-slow: 500ms;
+  --motion-ease-fintech: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --transition-fast: all var(--motion-duration-fast) var(--motion-ease-fintech);
+  --transition-base: all var(--motion-duration-base) var(--motion-ease-fintech);
+  --transition-slow: all var(--motion-duration-slow) var(--motion-ease-in-out);
+}
+
+/* ==========================================================================
+   UTILITY CLASSES & FOCUS RINGS FOR ACCESSIBILITY (WCAG 2.2 AA)
+   ========================================================================== */
+.focus-ring-upay {
+  outline: none;
+}
+.focus-ring-upay:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--upay-primary);
+}
+
+.focus-ring-accent {
+  outline: none;
+}
+.focus-ring-accent:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #0054A6, 0 0 0 4px var(--upay-accent);
+}
+
+/* Upay Shape Classes */
+.rounded-upay-sm {
+  border-radius: var(--radius-sm);
+}
+
+.rounded-upay-md {
+  border-radius: var(--radius-md);
+}
+
+.rounded-upay-lg {
+  border-radius: var(--radius-lg);
+}
+
+.rounded-upay-xl {
+  border-radius: var(--radius-xl);
+}
+
+.rounded-upay-full {
+  border-radius: var(--radius-full);
+}
+
+/* Upay Elevation Classes */
+.shadow-upay-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-upay-md {
+  box-shadow: var(--shadow-md);
+}

@@ -1,0 +1,67 @@
+{
+  "model_name": "xgboost_risk_engine",
+  "model_version": "v1.0.0",
+  "algorithm": "XGBClassifier",
+  "library_version": "3.4.1",
+  "trained_at": "2026-10-01T21:23:59.724481+00:00",
+  "train_samples": 1997,
+  "val_samples": 500,
+  "feature_count": 13,
+  "feature_names": [
+    "amount",
+    "transaction_hour",
+    "transaction_frequency",
+    "average_transaction_amount",
+    "amount_deviation",
+    "new_recipient",
+    "new_device",
+    "location_change",
+    "device_change",
+    "recipient_risk",
+    "velocity_5min",
+    "velocity_1hour",
+    "velocity_24hour"
+  ],
+  "hyperparameters": {
+    "n_estimators": 150,
+    "max_depth": 5,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "scale_pos_weight": 5.7,
+    "eval_metric": "logloss",
+    "random_state": 42
+  },
+  "metrics": {
+    "precision": 1.0,
+    "recall": 0.9865,
+    "f1": 0.9932,
+    "roc_auc": 1.0,
+    "confusion_matrix": {
+      "true_negatives": 426,
+      "false_positives": 0,
+      "false_negatives": 1,
+      "true_positives": 73
+    },
+    "false_positives": 0,
+    "false_negatives": 1
+  },
+  "risk_levels": {
+    "LOW": {
+      "min": 0.0,
+      "max": 0.35
+    },
+    "MEDIUM": {
+      "min": 0.35,
+      "max": 0.7
+    },
+    "HIGH": {
+      "min": 0.7,
+      "max": 0.88
+    },
+    "CRITICAL": {
+      "min": 0.88,
+      "max": 1.0
+    }
+  }
+}

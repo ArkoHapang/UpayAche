@@ -1,0 +1,41 @@
+@import "../styles/design-tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 6.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 6.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 211 100% 50%; /* #007BFF */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 7% 43%; /* #6C757D */
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 49 100% 50%; /* #FFD602 */
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 72% 51%; /* #DC2626 */
+    --destructive-foreground: 210 40% 98%;
+    --border: 210 11% 83%; /* #CED4DA */
+    --input: 210 11% 83%;
+    --ring: 211 100% 50%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    font-family: var(--font-family-base);
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
