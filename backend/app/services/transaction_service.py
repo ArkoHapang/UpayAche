@@ -74,11 +74,14 @@ class TransactionService:
             pattern_id=t.get("pattern_id"),
             pattern_code=t.get("pattern_code"),
             pattern_name=t.get("pattern_name"),
+            typology=t.get("typology"),
+            evidence_features=t.get("evidence_features") or [],
             is_fraud=is_f,
             is_anomaly=is_a,
             risk_score=r_score,
             risk_level=r_level
         )
+
 
     def list_transactions(
         self,

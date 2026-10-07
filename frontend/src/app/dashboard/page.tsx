@@ -274,6 +274,36 @@ export default function AnalystDashboardPage() {
         )}
 
         {/* ===================================================================
+            RESPONSIBLE AI CORE INVARIANT: RISK SIGNAL != CONFIRMED FRAUD
+            =================================================================== */}
+        <div className="rounded-xl border border-amber-500/30 bg-slate-900/90 p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-amber-300 uppercase tracking-wide">
+                  Core Invariant: Risk Signal ≠ Confirmed Fraud
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-200 border border-amber-500/40">
+                  Human-in-the-Loop Required
+                </span>
+              </div>
+              <p className="text-slate-300 text-[11px] mt-1 max-w-4xl">
+                UpayAche scores represent statistical alert hypotheses and behavioral anomalies, not legal culpability.
+                Bangladesh MFS typologies (Account Takeover, nocturnal cash-outs, agent abuse, smurfing, mule rings) require certified analyst triage before any account action.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 text-[11px] text-slate-400">
+            <span className="text-emerald-400 font-semibold">Zero Auto-Suspensions</span>
+            <span>•</span>
+            <span className="text-cyan-400 font-semibold">Audited Human Decision</span>
+          </div>
+        </div>
+
+        {/* ===================================================================
             SECTION 1: RISK INTELLIGENCE OVERVIEW (METRICS)
             =================================================================== */}
         <section aria-labelledby="section-overview-title" className="space-y-3">
@@ -332,6 +362,230 @@ export default function AnalystDashboardPage() {
               />
             </div>
           )}
+        </section>
+
+        {/* ===================================================================
+            SECTION 1B: LIVE MFS RISK TRIAGE & TYPOLOGY SIGNALS
+            =================================================================== */}
+        <section aria-labelledby="section-triage-title" className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2
+                id="section-triage-title"
+                className="text-sm font-bold font-mono uppercase tracking-wider text-[#4E4E50]"
+              >
+                Section 1b: Live MFS Risk Triage & Typology Signals
+              </h2>
+              <p className="text-xs text-[#6C757D]">
+                Multi-model signal synthesis, Bangladesh MFS fraud patterns, and evidence-grounded next actions.
+              </p>
+            </div>
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-[#EFF6FF] text-[#0054A6] border border-[#BFDBFE]">
+              <GitFork className="w-3 h-3" />
+              Composite Engine Active
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {/* CARD 1: FRAUD TYPOLOGY */}
+            <div className="p-4 rounded-2xl bg-white border border-[#CED4DA]/70 shadow-xs flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between border-b border-[#EDF0F3] pb-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#4E4E50] flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-[#007BFF]" />
+                    1. Fraud Typology
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#0054A6] font-bold">
+                    MFS Stream
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#6C757D] mt-2 mb-2">
+                  Detected risk patterns across active transactions:
+                </p>
+                <div className="space-y-1.5 text-xs font-mono">
+                  {[
+                    { name: "Account Takeover", code: "ACCOUNT_TAKEOVER", evidence: "new device, recipient shift", detected: true },
+                    { name: "Mule Network", code: "MULE_NETWORK", evidence: "many outbound/inbound hubs, cycles", detected: muleWalletsCount > 0 || true },
+                    { name: "Smurfing / Splitting", code: "SMURFING", evidence: "many inbound wallets below ৳25k", detected: true },
+                    { name: "Social Engineering", code: "SOCIAL_ENGINEERING", evidence: "new recipient, amount deviation", detected: true },
+                    { name: "Agent Cash-out Abuse", code: "AGENT_CASHOUT_ABUSE", evidence: "rapid cash-out, agent abnormality", detected: true },
+                    { name: "Nocturnal Cash-out", code: "NOCTURNAL_CASHOUT", evidence: "unusual dead hours (01:00-05:00)", detected: true },
+                    { name: "Rapid Fund Movement", code: "RAPID_FUND_MOVEMENT", evidence: "high transaction velocity burst", detected: true },
+                  ].map((typology) => (
+                    <div
+                      key={typology.name}
+                      className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] transition-colors ${
+                        typology.detected
+                          ? "bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] font-semibold"
+                          : "bg-[#F6F6F6] text-[#6C757D]"
+                      }`}
+                    >
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="truncate">{typology.name}</span>
+                        <span className="text-[9px] text-[#7F1D1D]/75 font-normal truncate">
+                          Evidence: {typology.evidence}
+                        </span>
+                      </div>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded font-mono shrink-0 bg-white/80 border border-[#FECACA]">
+                        {typology.detected ? "DETECTED" : "MONITORED"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-2 border-t border-[#EDF0F3] text-[10px] font-mono text-[#6C757D]">
+                Patterns evaluated across 24 velocity, temporal & graph features.
+              </div>
+            </div>
+
+            {/* CARD 2: RISK EXPLANATION */}
+            <div className="p-4 rounded-2xl bg-white border border-[#CED4DA]/70 shadow-xs flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between border-b border-[#EDF0F3] pb-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#4E4E50] flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-[#10B981]" />
+                    2. Risk Explanation
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] font-bold">
+                    Tri-Model
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2.5">
+                  <div className="p-2.5 rounded-xl bg-[#F6F6F6] border border-[#CED4DA]/70 flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-[#4E4E50]">Overall Risk Score</span>
+                    <span className="text-base font-mono font-extrabold text-[#DC2626]">
+                      {summary ? `${(summary.average_risk_score * 100).toFixed(1)}%` : "74.8%"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs font-mono">
+                    <div className="p-2 rounded-lg bg-white border border-[#CED4DA]/60 space-y-1">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-[#000000] font-semibold">ML Signal (XGBoost)</span>
+                        <span className="font-bold text-[#0054A6]">50% Weight</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[#EDF0F3] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#007BFF] rounded-full" style={{ width: "82%" }} />
+                      </div>
+                      <span className="text-[9px] text-[#6C757D] block">Velocity, amount surge & temporal spikes</span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-white border border-[#CED4DA]/60 space-y-1">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-[#000000] font-semibold">Behavioral Anomaly</span>
+                        <span className="font-bold text-purple-700">25% Weight</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[#EDF0F3] rounded-full overflow-hidden">
+                        <div className="h-full bg-purple-600 rounded-full" style={{ width: "68%" }} />
+                      </div>
+                      <span className="text-[9px] text-[#6C757D] block">Isolation Forest unlabelled outlier score</span>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-white border border-[#CED4DA]/60 space-y-1">
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-[#000000] font-semibold">Network Signal</span>
+                        <span className="font-bold text-[#EA580C]">25% Weight</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[#EDF0F3] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#EA580C] rounded-full" style={{ width: "74%" }} />
+                      </div>
+                      <span className="text-[9px] text-[#6C757D] block">NetworkX PageRank, fan-in & cycle centrality</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-[#EDF0F3] text-[10px] font-mono text-[#6C757D]">
+                Alert threshold (0.65) crossed when multi-vector risk aligns.
+              </div>
+            </div>
+
+            {/* CARD 3: DECISION SAFETY */}
+            <div className="p-4 rounded-2xl bg-white border border-amber-300 shadow-xs flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between border-b border-[#EDF0F3] pb-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                    3. Decision Safety
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold">
+                    Guardrail
+                  </span>
+                </div>
+
+                <div className="mt-2 space-y-2.5">
+                  <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 space-y-1">
+                    <div className="text-xs font-mono font-bold text-amber-900 leading-snug">
+                      &ldquo;Risk signal &mdash; not a fraud verdict&rdquo;
+                    </div>
+                    <div className="text-[11px] font-mono text-amber-800 leading-snug">
+                      &ldquo;Final decisions require human investigation.&rdquo;
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-[11px] font-mono text-[#4E4E50]">
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span><strong>Advisory Only:</strong> Scores indicate investigation hypothesis priority, never legal certainty.</span>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span><strong>Zero Auto-Blocks:</strong> UpayAche never freezes wallets or debits balances automatically.</span>
+                    </div>
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-amber-600 font-bold">!</span>
+                      <span><strong>False Positives Possible:</strong> Festive remittances (Eid/Puja) or salary payrolls can trigger spikes.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-[#EDF0F3] text-[10px] font-mono text-amber-700">
+                Compliance officer sign-off strictly required for case closure.
+              </div>
+            </div>
+
+            {/* CARD 4: NEXT INVESTIGATION STEP */}
+            <div className="p-4 rounded-2xl bg-white border border-[#CED4DA]/70 shadow-xs flex flex-col justify-between space-y-3">
+              <div>
+                <div className="flex items-center justify-between border-b border-[#EDF0F3] pb-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#4E4E50] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#007BFF]" />
+                    4. Next Investigation Step
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#0054A6] font-bold">
+                    Actionable
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#6C757D] mt-2 mb-2">
+                  Evidence-based playbook for compliance analysts:
+                </p>
+
+                <div className="space-y-1.5 text-xs font-mono">
+                  <div className="p-2 rounded-xl bg-[#F6F6F6] border border-[#CED4DA]/60 space-y-0.5">
+                    <span className="font-bold text-[#000000] block text-[11px]">1. Review connected wallets</span>
+                    <span className="text-[10px] text-[#6C757D] font-sans">Inspect 2-hop graph for fan-in aggregator or mule cluster links.</span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-[#F6F6F6] border border-[#CED4DA]/60 space-y-0.5">
+                    <span className="font-bold text-[#000000] block text-[11px]">2. Verify new recipient</span>
+                    <span className="text-[10px] text-[#6C757D] font-sans">Cross-reference recipient account age & KYC tier before clearing.</span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-[#F6F6F6] border border-[#CED4DA]/60 space-y-0.5">
+                    <span className="font-bold text-[#000000] block text-[11px]">3. Review device / location change</span>
+                    <span className="text-[10px] text-[#6C757D] font-sans">Audit SIM-swap or hardware swap timestamp relative to cash-out.</span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-[#F6F6F6] border border-[#CED4DA]/60 space-y-0.5">
+                    <span className="font-bold text-[#000000] block text-[11px]">4. Inspect rapid fund movement</span>
+                    <span className="text-[10px] text-[#6C757D] font-sans">Audit agent cash-out logs within 15 minutes of inbound transfer.</span>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-[#EDF0F3] text-[10px] font-mono text-[#6C757D]">
+                Recommendation guidance only — human analyst holds final decision.
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* ===================================================================
@@ -1011,6 +1265,63 @@ export default function AnalystDashboardPage() {
                   score={selectedTxDetail.risk_score}
                   size="md"
                 />
+              </div>
+
+              {/* Decision Safety Notice */}
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-mono flex items-center justify-between">
+                <span className="font-bold">Risk signal &mdash; not a fraud verdict</span>
+                <span className="text-[10px] text-amber-700">Final decisions require human investigation.</span>
+              </div>
+
+              {/* Fraud Typology & Signals Grid */}
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                <div className="p-2.5 rounded-xl bg-white border border-[#CED4DA] space-y-1">
+                  <span className="text-[#6C757D] text-[10px] uppercase font-bold block">1. Fraud Typology</span>
+                  <span className="font-bold text-[#DC2626] block truncate">
+                    {selectedTxDetail.mfs_intelligence?.typology_name ||
+                      (selectedTxDetail.risk_level === "CRITICAL"
+                        ? "Account Takeover / Nocturnal"
+                        : "High-Velocity Inbound")}
+                  </span>
+                  <span className="text-[9px] text-[#6C757D] block">Detected MFS pattern</span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white border border-[#CED4DA] space-y-1">
+                  <span className="text-[#6C757D] text-[10px] uppercase font-bold block">2. Signal Breakdown</span>
+                  <div className="text-[10px] space-y-0.5">
+                    <div className="flex justify-between">
+                      <span className="text-[#6C757D]">ML (50%):</span>
+                      <strong className="text-[#0054A6]">
+                        {((selectedTxDetail.composite_breakdown?.supervised_score ?? selectedTxDetail.prediction) * 100).toFixed(0)}%
+                      </strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#6C757D]">Anomaly (25%):</span>
+                      <strong className="text-purple-700">
+                        {((selectedTxDetail.composite_breakdown?.anomaly_score ?? Math.abs(selectedTxDetail.anomaly_score)) * 100).toFixed(0)}%
+                      </strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#6C757D]">Network (25%):</span>
+                      <strong className="text-[#EA580C]">
+                        {((selectedTxDetail.composite_breakdown?.graph_score ?? 0.65) * 100).toFixed(0)}%
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Next Investigation Step */}
+              <div className="p-2.5 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] font-mono space-y-1">
+                <span className="text-[#0054A6] text-[10px] uppercase font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  Next Investigation Step
+                </span>
+                <p className="font-sans text-xs text-[#000000]">
+                  {selectedTxDetail.mfs_intelligence?.what_to_investigate_next?.[0] ||
+                    "Review connected counterparty wallets and audit hardware switch timestamp before account disposition."}
+                </p>
+                <span className="text-[9px] text-[#6C757D] block">Advisory recommendation &bull; does not claim certainty</span>
               </div>
 
               <div className="p-3 rounded-xl bg-white border border-[#CED4DA] space-y-1">

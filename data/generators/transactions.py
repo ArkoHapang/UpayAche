@@ -131,6 +131,8 @@ def generate_transactions(
             "pattern_id": 1,
             "pattern_code": PATTERNS[1]["code"],
             "pattern_name": PATTERNS[1]["name"],
+            "typology": PATTERNS[1].get("typology", "NORMAL"),
+            "evidence_features": PATTERNS[1].get("evidence_features", []),
             "is_fraud": 0,
             "is_anomaly": 0,
             "scenario_id": "NORMAL_BASELINE"
@@ -166,6 +168,8 @@ def generate_transactions(
             "pattern_id": 2,
             "pattern_code": PATTERNS[2]["code"],
             "pattern_name": PATTERNS[2]["name"],
+            "typology": PATTERNS[2].get("typology", "RAPID_FUND_MOVEMENT"),
+            "evidence_features": PATTERNS[2].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": "LARGE_TRANSACTION_BURST"
@@ -194,6 +198,8 @@ def generate_transactions(
             "pattern_id": 3,
             "pattern_code": PATTERNS[3]["code"],
             "pattern_name": PATTERNS[3]["name"],
+            "typology": PATTERNS[3].get("typology", "RAPID_FUND_MOVEMENT"),
+            "evidence_features": PATTERNS[3].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": f"VELOCITY_STORM_{burst_sender['wallet_number']}"
@@ -224,6 +230,8 @@ def generate_transactions(
             "pattern_id": 4,
             "pattern_code": PATTERNS[4]["code"],
             "pattern_name": PATTERNS[4]["name"],
+            "typology": PATTERNS[4].get("typology", "ACCOUNT_TAKEOVER"),
+            "evidence_features": PATTERNS[4].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": "NEW_ROOTED_DEVICE"
@@ -251,6 +259,8 @@ def generate_transactions(
             "pattern_id": 5,
             "pattern_code": PATTERNS[5]["code"],
             "pattern_name": PATTERNS[5]["name"],
+            "typology": PATTERNS[5].get("typology", "SOCIAL_ENGINEERING"),
+            "evidence_features": PATTERNS[5].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": "NEW_RECIPIENT_DISPERSAL"
@@ -280,6 +290,8 @@ def generate_transactions(
             "pattern_id": 6,
             "pattern_code": PATTERNS[6]["code"],
             "pattern_name": PATTERNS[6]["name"],
+            "typology": PATTERNS[6].get("typology", "NOCTURNAL_CASHOUT"),
+            "evidence_features": PATTERNS[6].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": "NOCTURNAL_DEAD_HOURS_DRAIN"
@@ -310,6 +322,8 @@ def generate_transactions(
             "pattern_id": 7,
             "pattern_code": PATTERNS[7]["code"],
             "pattern_name": PATTERNS[7]["name"],
+            "typology": PATTERNS[7].get("typology", "ACCOUNT_TAKEOVER"),
+            "evidence_features": PATTERNS[7].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": "HIGH_RISK_BORDER_JUMP"
@@ -338,6 +352,8 @@ def generate_transactions(
             "pattern_id": 8,
             "pattern_code": PATTERNS[8]["code"],
             "pattern_name": PATTERNS[8]["name"],
+            "typology": PATTERNS[8].get("typology", "AGENT_CASHOUT_ABUSE"),
+            "evidence_features": PATTERNS[8].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": "DORMANT_COMPLETE_DRAIN"
@@ -368,6 +384,8 @@ def generate_transactions(
             "pattern_id": 9,
             "pattern_code": PATTERNS[9]["code"],
             "pattern_name": PATTERNS[9]["name"],
+            "typology": PATTERNS[9].get("typology", "SMURFING"),
+            "evidence_features": PATTERNS[9].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": f"SMURFING_RING_{aggregator['wallet_number']}"
@@ -404,6 +422,8 @@ def generate_transactions(
                 "pattern_id": 10,
                 "pattern_code": PATTERNS[10]["code"],
                 "pattern_name": PATTERNS[10]["name"],
+                "typology": PATTERNS[10].get("typology", "MULE_NETWORK"),
+                "evidence_features": PATTERNS[10].get("evidence_features", []),
                 "is_fraud": 1,
                 "is_anomaly": 1,
                 "scenario_id": "TRIANGULAR_CIRCULAR_LOOP"
@@ -433,6 +453,8 @@ def generate_transactions(
             "pattern_id": 11,
             "pattern_code": PATTERNS[11]["code"],
             "pattern_name": PATTERNS[11]["name"],
+            "typology": PATTERNS[11].get("typology", "RAPID_FUND_MOVEMENT"),
+            "evidence_features": PATTERNS[11].get("evidence_features", []),
             "is_fraud": 1,
             "is_anomaly": 1,
             "scenario_id": "REPEATED_IDENTICAL_TRANSFERS"
@@ -448,14 +470,14 @@ def generate_transactions(
 
     scam_stages = [
         # Stage 1: Victim tricked into sending money
-        (victim, intermediate_mule, "P2P", 35000.0, 5.00, "STAGE_1_VICTIM_TRANSFER"),
+        (victim, intermediate_mule, "P2P", 35000.0, 5.00, "STAGE_1_VICTIM_TRANSFER", "SOCIAL_ENGINEERING", ["new_recipient", "amount_deviation"]),
         # Stage 2: Mule transfers to secondary layer
-        (intermediate_mule, cashout_mule, "P2P", 34500.0, 5.00, "STAGE_2_MULE_LAYERING"),
+        (intermediate_mule, cashout_mule, "P2P", 34500.0, 5.00, "STAGE_2_MULE_LAYERING", "MULE_NETWORK", ["many_inbound_wallets", "many_outbound_wallets", "high_transaction_velocity"]),
         # Stage 3: Immediate cashout at agent POS
-        (cashout_mule, cashout_agent, "CASH_OUT", 34000.0, round(34000 * 0.0149, 2), "STAGE_3_AGENT_CASHOUT")
+        (cashout_mule, cashout_agent, "CASH_OUT", 34000.0, round(34000 * 0.0149, 2), "STAGE_3_AGENT_CASHOUT", "AGENT_CASHOUT_ABUSE", ["rapid_cash_out", "agent_abnormality", "amount_deviation"])
     ]
     for _ in range(max(1, per_pattern_count // 3)):
-        for s_w, r_w, t_type, s_amt, s_fee, stage in scam_stages:
+        for s_w, r_w, t_type, s_amt, s_fee, stage, typ_code, evid_feats in scam_stages:
             scam_time += timedelta(minutes=rng.randint(5, 12))
             tx_id = f"e1000000-0000-0000-0000-{tx_index:012d}"
             transactions.append({
@@ -473,6 +495,8 @@ def generate_transactions(
                 "pattern_id": 12,
                 "pattern_code": PATTERNS[12]["code"],
                 "pattern_name": PATTERNS[12]["name"],
+                "typology": typ_code,
+                "evidence_features": evid_feats,
                 "is_fraud": 1,
                 "is_anomaly": 1,
                 "scenario_id": f"SCAM_SYNDICATE_{stage}"

@@ -216,3 +216,44 @@ async def get_transaction_chains(
         raise HTTPException(status_code=404, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to trace transaction chains: {str(exc)}")
+
+
+@router.get(
+    "/mule-rings",
+    response_model=List[Dict[str, Any]],
+    summary="Get Detected Mule Rings",
+    description="Returns detected circular mule rings with participant roles and loop volumes."
+)
+async def get_mule_rings(
+    service: WalletNetworkService = Depends(get_network_service)
+) -> List[Dict[str, Any]]:
+    return service.get_mule_rings()
+
+
+@router.get(
+    "/fan-hubs",
+    response_model=Dict[str, Any],
+    summary="Get Fan-In and Fan-Out Hubs",
+    description="Returns fan-in aggregators and fan-out dispersers."
+)
+async def get_fan_hubs(
+    service: WalletNetworkService = Depends(get_network_service)
+) -> Dict[str, Any]:
+    return service.get_fan_hubs()
+
+
+@router.get(
+    "/shortest-path",
+    response_model=Optional[Dict[str, Any]],
+    summary="Find Shortest Suspicious Path",
+    description="Finds shortest directed path between source and target, or source and nearest suspicious mule wallet."
+)
+async def get_shortest_path(
+    source_wallet_id: str = Query(..., description="Source wallet ID"),
+    target_wallet_id: Optional[str] = Query(None, description="Optional target wallet ID"),
+    service: WalletNetworkService = Depends(get_network_service)
+) -> Optional[Dict[str, Any]]:
+    res = service.get_shortest_suspicious_path(source_wallet_id=source_wallet_id, target_wallet_id=target_wallet_id)
+    if not res:
+        return None
+    return res

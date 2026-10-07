@@ -16,7 +16,9 @@ import {
   Hash,
   Clock,
   Layers,
-  Info
+  Info,
+  AlertTriangle,
+  Languages
 } from "lucide-react";
 import { StructuredRiskEvidence, TieredInvestigationResponse } from "@/lib/api";
 
@@ -125,6 +127,19 @@ export const TieredEvidenceView: React.FC<TieredEvidenceViewProps> = ({
         </span>
       </div>
 
+      {/* Mandatory Advisory Notice Banner */}
+      <div className="mx-3.5 mt-3 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 font-sans flex items-start gap-2 leading-relaxed">
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <strong className="block text-amber-200">
+            AI-generated investigation assistance. Verify all conclusions against the evidence. Final decisions remain with authorized analysts.
+          </strong>
+          <span className="text-[10px] text-slate-400 font-mono block">
+            Advisory intelligence only • Zero automated punitive authority • Human sign-off required
+          </span>
+        </div>
+      </div>
+
       <div className="p-3.5 space-y-3 text-xs">
         {/* ================= TIER 1: MODEL RESULT ================= */}
         {(activeTab === "all" || activeTab === "model") && (
@@ -151,7 +166,7 @@ export const TieredEvidenceView: React.FC<TieredEvidenceViewProps> = ({
                   </span>
                 </div>
                 <div className="mt-2 flex items-baseline gap-2">
-                  <span className="text-xl font-bold font-mono text-slate-900 dark:text-white">
+                  <span className="text-xl font-bold font-mono text-slate-900 dark:white">
                     {riskScore !== null ? riskScore.toFixed(4) : "Unavailable"}
                   </span>
                   {riskScorePercent !== null && (
@@ -197,48 +212,46 @@ export const TieredEvidenceView: React.FC<TieredEvidenceViewProps> = ({
           </div>
         )}
 
-        {/* ================= TIER 2: EVIDENCE ================= */}
+        {/* ================= TIER 2: FACTS FROM EVIDENCE ================= */}
         {(activeTab === "all" || activeTab === "evidence") && (
-          <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-purple-500/20 shadow-sm animate-in fade-in-50 duration-200">
-            <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-purple-500/20 shadow-sm animate-in fade-in-50 duration-200 space-y-3">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
               <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
                 <FileSearch className="w-4 h-4 text-purple-500" />
-                <span>Evidence</span>
+                <span>Facts From Evidence</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono font-bold">
                 Ledger + SHAP + NetworkX
               </span>
             </div>
 
-            {/* Transaction Ledger Context */}
-            {txContext && Object.keys(txContext).length > 0 && (
-              <div className="mb-2.5 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Hash</span>
-                  <span className="font-mono font-semibold text-slate-800 dark:text-slate-200 truncate block">
-                    {txContext.tx_hash || "TX-RECORD"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Amount</span>
-                  <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                    BDT {Number(txContext.amount_bdt || 0).toLocaleString()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Type</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    {txContext.tx_type || "P2P"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Sender (Masked)</span>
-                  <span className="font-mono text-slate-700 dark:text-slate-300">
-                    {txContext.sender_masked || "Unavailable"}
-                  </span>
-                </div>
+            {/* Structured Empirical Fact Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
+              <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800">
+                <span className="text-slate-400 block text-[10px] uppercase font-sans">Transaction ID</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                  {txContext.tx_hash || "TX-RECORD"}
+                </span>
               </div>
-            )}
+              <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800">
+                <span className="text-slate-400 block text-[10px] uppercase font-sans">Amount</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400 block">
+                  BDT {Number(txContext.amount_bdt || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800">
+                <span className="text-slate-400 block text-[10px] uppercase font-sans">Sender (Masked)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                  {txContext.sender_masked || "Unavailable"}
+                </span>
+              </div>
+              <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800">
+                <span className="text-slate-400 block text-[10px] uppercase font-sans">Timestamp</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                  {txContext.timestamp ? String(txContext.timestamp).slice(0, 19).replace("T", " ") : "Recent"}
+                </span>
+              </div>
+            </div>
 
             {/* Top Risk Features & SHAP */}
             <div className="space-y-2">
@@ -317,42 +330,83 @@ export const TieredEvidenceView: React.FC<TieredEvidenceViewProps> = ({
           </div>
         )}
 
-        {/* ================= TIER 3: AI EXPLANATION ================= */}
+        {/* ================= TIER 3: AI INTERPRETATION ================= */}
         {(activeTab === "all" || activeTab === "explanation") && (
-          <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-emerald-500/20 shadow-sm animate-in fade-in-50 duration-200">
-            <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+          <div className="p-3.5 rounded-xl bg-white dark:bg-slate-950 border border-emerald-500/20 shadow-sm animate-in fade-in-50 duration-200 space-y-3">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
               <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100">
                 <Sparkles className="w-4 h-4 text-emerald-500" />
-                <span>AI Explanation</span>
+                <span>AI Interpretation</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                Gemini Copilot
+                Advisory Reasoning
               </span>
             </div>
 
-            <div className="space-y-2 text-slate-700 dark:text-slate-300 font-sans leading-relaxed">
+            <div className="space-y-2.5 text-slate-700 dark:text-slate-300 font-sans leading-relaxed">
               {explanation ? (
                 <>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">
-                    {explanation.executive_summary}
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    {explanation.risk_breakdown}
-                  </p>
+                  {/* Likely Explanation */}
+                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1 font-mono">
+                      Likely Explanation &amp; Typology:
+                    </span>
+                    <p className="font-medium text-slate-900 dark:text-slate-100 text-xs">
+                      {explanation.executive_summary}
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                      {explanation.risk_breakdown}
+                    </p>
+                  </div>
 
-                  {explanation.investigation_guidance && explanation.investigation_guidance.length > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1">
-                        Recommended Human Investigator Steps:
+                  {/* Investigation Triad */}
+                  <div className="grid grid-cols-1 gap-2 pt-1">
+                    {/* What Happened */}
+                    <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                      <span className="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400 tracking-wider block mb-0.5 font-mono">
+                        What Happened:
+                      </span>
+                      <p className="text-xs text-slate-700 dark:text-slate-300">
+                        {explanation.what_happened || explanation.executive_summary}
+                      </p>
+                    </div>
+
+                    {/* Why It May Be Risky */}
+                    <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                      <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider block mb-0.5 font-mono">
+                        Why It May Be Risky:
+                      </span>
+                      <p className="text-xs text-slate-700 dark:text-slate-300">
+                        {explanation.why_risky || explanation.risk_breakdown}
+                      </p>
+                    </div>
+
+                    {/* What To Investigate Next */}
+                    <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                      <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider block mb-1 font-mono">
+                        What To Investigate Next:
                       </span>
                       <ul className="space-y-1">
-                        {explanation.investigation_guidance.map((step, i) => (
+                        {(explanation.what_to_investigate_next || explanation.investigation_guidance || explanation.recommended_actions || []).map((step: string, i: number) => (
                           <li key={i} className="flex items-start gap-1.5 text-xs text-slate-700 dark:text-slate-300">
                             <CheckCircle className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
                             <span>{step}</span>
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  </div>
+
+                  {/* Bangla Summary */}
+                  {(explanation.bangla_summary || explanation.bangla_explanation) && (
+                    <div className="mt-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-300 mb-1">
+                        <Languages className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>বাংলায় সারসংক্ষেপ ও তদন্ত নির্দেশিকা:</span>
+                      </div>
+                      <p className="text-slate-800 dark:text-slate-200">
+                        {explanation.bangla_explanation || explanation.bangla_summary}
+                      </p>
                     </div>
                   )}
                 </>

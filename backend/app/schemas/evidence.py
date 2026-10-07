@@ -89,12 +89,29 @@ class AIExplanationTier(BaseModel):
     recommended_actions: List[str] = Field(default_factory=list)
     narrative_explanation: Optional[str] = None
     investigator_checklist: List[str] = Field(default_factory=list)
+    what_happened: Optional[str] = None
+    why_risky: Optional[str] = None
+    what_to_investigate_next: List[str] = Field(default_factory=list)
+    bangla_summary: Optional[str] = None
+    bangla_explanation: Optional[str] = None
+    advisory_label: str = (
+        "AI-generated investigation assistance. Verify all conclusions against the evidence. Final decisions remain with authorized analysts."
+    )
+    responsible_ai_disclaimer: Optional[str] = (
+        "সংকেত সতর্কতা: এটি সম্ভাব্য ঝুঁকি যাচাইয়ের সংকেত (Risk Signal), নিশ্চিত জালিয়াতি নয়। মানব বিশ্লেষকের সিদ্ধান্ত আবশ্যক।"
+    )
+    facts_from_evidence: Optional[Dict[str, Any]] = None
+    ai_interpretation: Optional[Dict[str, Any]] = None
 
     def model_post_init(self, __context: Any) -> None:
         if not self.narrative_explanation:
             self.narrative_explanation = self.executive_summary
         if not self.investigator_checklist:
             self.investigator_checklist = self.investigation_guidance or self.recommended_actions
+        if not self.what_to_investigate_next:
+            self.what_to_investigate_next = self.investigator_checklist
+        if not self.bangla_explanation:
+            self.bangla_explanation = self.bangla_summary
 
 
 class TieredInvestigationResponse(BaseModel):

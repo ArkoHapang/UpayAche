@@ -13,7 +13,8 @@ from app.schemas.investigations import (
     InvestigationCaseResponse,
     InvestigationNoteCreate,
     InvestigationNoteResponse,
-    InvestigationListResponse
+    InvestigationListResponse,
+    RecommendedWalletForReview
 )
 from app.core.security import CurrentUser
 from app.services.audit_service import get_audit_service
@@ -77,6 +78,31 @@ class InvestigationService:
             for n in c.get("notes", [])
         ]
 
+        recommended_wallets: List[RecommendedWalletForReview] = []
+        if c.get("resolution") == "CONFIRMED_FRAUD" and c.get("target_wallet_id"):
+            target_wid = str(c["target_wallet_id"])
+            try:
+                from app.services.network_service import get_network_service
+                net_service = get_network_service()
+                nbrs_resp = net_service.get_wallet_neighbors(target_wid)
+                for n in nbrs_resp.neighbors[:5]:
+                    rel_type = "Inbound Transfer (Sender)" if n.direction == "INBOUND" else "Outbound Transfer (Receiver)"
+                    reason = f"Direct 1-hop {n.direction.lower()} transaction partner connected to confirmed fraud wallet"
+                    recommended_wallets.append(RecommendedWalletForReview(
+                        wallet_id=n.neighbor_wallet_id,
+                        wallet_number=n.wallet_number or f"WAL-{n.neighbor_wallet_id[:8]}",
+                        phone_number_masked=n.phone_number_masked or "017****0000",
+                        connection_reason=reason,
+                        hop_distance=1,
+                        transaction_relationship=rel_type,
+                        relation=f"COUNTERPARTY_{n.direction}",
+                        risk_tier=n.risk_tier,
+                        recommendation="Recommended for Review",
+                        advisory_notice="ADVISORY ONLY: Recommended for manual analyst triage. NEVER automatically blocked, suspended, or penalized."
+                    ))
+            except Exception:
+                pass
+
         return InvestigationCaseResponse(
             id=c["id"],
             case_number=c["case_number"],
@@ -91,7 +117,8 @@ class InvestigationService:
             created_at=c["created_at"],
             updated_at=c["updated_at"],
             closed_at=c.get("closed_at"),
-            notes=notes
+            notes=notes,
+            recommended_wallets_for_review=recommended_wallets
         )
 
     def create_case(self, data: InvestigationCaseCreate, user: CurrentUser) -> InvestigationCaseResponse:
@@ -165,8 +192,28 @@ class InvestigationService:
                 "comment": update.analyst_comment
             }
         )
+        updated_case_resp = self.get_case(case_id)
 
-        return self.get_case(case_id)
+        # 5. Create audit entry for connected-wallet recommendations on CONFIRMED_FRAUD
+        if update.resolution == "CONFIRMED_FRAUD" and updated_case_resp.recommended_wallets_for_review:
+            rec_ids = [w.wallet_id for w in updated_case_resp.recommended_wallets_for_review]
+            get_audit_service().log_event(
+                actor_id=user.id,
+                actor_role=user.role,
+                action="CONNECTED_WALLETS_RECOMMENDED_FOR_REVIEW",
+                resource_type="investigation_case",
+                resource_id=case_id,
+                metadata={
+                    "resolution": "CONFIRMED_FRAUD",
+                    "target_wallet_id": curr_case.get("target_wallet_id"),
+                    "recommended_wallets": rec_ids,
+                    "count": len(rec_ids),
+                    "policy": "ADVISORY_ONLY_NEVER_AUTO_BLOCK",
+                    "notice": "Connected wallets recommended for human analyst review only. Zero automated account actions."
+                }
+            )
+
+        return updated_case_resp
 
     def add_note(self, case_id: str, note_data: InvestigationNoteCreate, user: CurrentUser) -> InvestigationNoteResponse:
         if user.role == "VIEWER":

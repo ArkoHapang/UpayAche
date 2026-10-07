@@ -19,7 +19,7 @@ from data.generators.wallets import generate_wallets
 from data.generators.transactions import generate_transactions
 from data.generators.relationships import generate_wallet_relationships
 from data.generators.features import extract_features_for_transactions
-from data.generators.patterns import PATTERNS
+from data.generators.patterns import PATTERNS, TYPOLOGIES
 
 
 class SyntheticDataEngine:
@@ -70,7 +70,7 @@ class SyntheticDataEngine:
         df_wallets = pd.DataFrame(wallets)
         df_wallets.to_csv(self.synthetic_dir / "wallets.csv", index=False)
 
-        # 5. Transactions (Normal + 11 Suspicious Patterns)
+        # 5. Transactions (Normal + 11 Suspicious Patterns + 7 Typologies)
         transactions = generate_transactions(
             wallets=wallets,
             devices=devices,
@@ -89,9 +89,11 @@ class SyntheticDataEngine:
         df_relationships = pd.DataFrame(relationships)
         df_relationships.to_csv(self.synthetic_dir / "wallet_relationships.csv", index=False)
 
-        # 7. Patterns Taxonomy Metadata
+        # 7. Patterns & Typologies Taxonomy Metadata
         with open(self.synthetic_dir / "patterns.json", "w", encoding="utf-8") as f:
             json.dump(PATTERNS, f, indent=2)
+        with open(self.synthetic_dir / "typologies.json", "w", encoding="utf-8") as f:
+            json.dump(TYPOLOGIES, f, indent=2)
 
         # 8. Feature Extraction (24-dim features)
         features = extract_features_for_transactions(transactions, wallets, relationships)
@@ -108,10 +110,11 @@ class SyntheticDataEngine:
         df_features = pd.DataFrame(tabular_rows)
         # Merge ground truth labels from transactions
         df_labels = df_transactions[[
-            "id", "pattern_id", "pattern_code", "is_fraud", "is_anomaly", "scenario_id"
+            "id", "pattern_id", "pattern_code", "typology", "is_fraud", "is_anomaly", "scenario_id"
         ]].rename(columns={"id": "transaction_id"})
 
         df_processed = pd.merge(df_features, df_labels, on="transaction_id")
+        df_processed.to_csv(self.processed_dir / "dataset_labeled_features.csv", index=False)
         df_processed.to_csv(self.processed_dir / "dataset_labeled_features.csv", index=False)
 
         # Split train (80%) and test (20%) chronologically

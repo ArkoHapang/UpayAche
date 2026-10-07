@@ -285,6 +285,7 @@ class RiskEvidenceCompiler:
         inquiry: Optional[str] = None,
         query: Optional[str] = None,
         ai_narrative: Optional[str] = None,
+        language: Optional[str] = "auto",
         **kwargs
     ) -> TieredInvestigationResponse:
         """
@@ -329,7 +330,7 @@ class RiskEvidenceCompiler:
         )
 
         # Tier 3: AI Explanation (via Gemini or deterministic template)
-        ai_explanation = self._synthesize_ai_explanation(evidence, inquiry=effective_inquiry)
+        ai_explanation = self._synthesize_ai_explanation(evidence, inquiry=effective_inquiry, language=language)
         if ai_narrative:
             ai_explanation.narrative_explanation = ai_narrative
 
@@ -342,7 +343,8 @@ class RiskEvidenceCompiler:
     def _synthesize_ai_explanation(
         self,
         evidence: StructuredRiskEvidence,
-        inquiry: Optional[str] = None
+        inquiry: Optional[str] = None,
+        language: Optional[str] = "auto"
     ) -> AIExplanationTier:
         """Call Gemini to explain pre-computed ML evidence, or use deterministic fallback."""
         score_str = f"{evidence.risk_score:.4f}" if evidence.risk_score is not None else "Unavailable"
@@ -412,6 +414,63 @@ class RiskEvidenceCompiler:
             + f"Topological signals: {'; '.join(evidence.network_signals)}."
         )
 
+        # Construct deterministic triad breakdown
+        sender_m = evidence.transaction_context.get("sender_masked", "Sender")
+        rec_m = evidence.transaction_context.get("receiver_masked", "Beneficiary")
+        tx_type = evidence.transaction_context.get("tx_type", "P2P")
+        tx_time = evidence.transaction_context.get("timestamp", "Recent")
+
+        what_h = (
+            f"Transfer of BDT {amount:,.2f} ({tx_type}) from {sender_m} to {rec_m} recorded at {tx_time}. "
+            f"XGBoost risk score: {score_str} ({evidence.risk_level}); Isolation Forest anomaly score: {anom_str}."
+        )
+
+        if evidence.risk_score and evidence.risk_score >= 0.70:
+            why_r = (
+                f"Elevated risk score ({score_str}) triggered by high transaction velocity, "
+                f"divergence from historical baseline ({anom_str}), and topological network signals "
+                f"({len(evidence.network_signals)} indicators detected)."
+            )
+            bn_sum = (
+                f"তদন্ত নির্দেশিকা (Advisory): {sender_m} থেকে {rec_m} অ্যাকাউন্টে {amount:,.0f} টাকার লেনদেনে "
+                f"উচ্চ ঝুঁকি (স্কোর: {score_str}) ধরা পড়েছে। অস্বাভাবিক লেনদেনের গতি এবং নেটওয়ার্ক সংযোগের কারণে "
+                f"এটি মানি লন্ডারিং বা মিউল রিংয়ের সংকেত হতে পারে। মানব বিশ্লেষকের দ্বারা যাচাই আবশ্যক।"
+            )
+        else:
+            why_r = (
+                f"Transaction risk evaluates to normal parameters ({score_str}). "
+                f"Behavior aligns within expected statistical bounds of normal user profile."
+            )
+            bn_sum = (
+                f"তদন্ত নির্দেশিকা (Advisory): {sender_m} থেকে {amount:,.0f} টাকার লেনদেনের ঝুঁকি স্বাভাবিক সীমায় রয়েছে "
+                f"(স্কোর: {score_str})। কোনো তাৎক্ষণিক স্থগিতাদেশের প্রয়োজন নেই।"
+            )
+
+        resp_disclaimer = (
+            "ঝুঁকি সতর্কতা: এটি একটি তদন্তমূলক সংকেত (Risk Signal), চূড়ান্ত প্রমাণিত জালিয়াতি নয় (Not Confirmed Fraud)। "
+            "ফলস পজিটিভ হওয়া সম্ভব। চূড়ান্ত সিদ্ধান্ত মানব বিশ্লেষকের।"
+        )
+
+        advisory_label_text = (
+            "AI-generated investigation assistance. Verify all conclusions against the evidence. Final decisions remain with authorized analysts."
+        )
+
+        facts_dict = {
+            "wallet_ids": [w for w in [sender_m, rec_m] if w and w != "Unavailable"],
+            "transaction_ids": [evidence.transaction_context.get("tx_hash", "TX-RECORD")],
+            "amounts": [f"BDT {amount:,.2f}"],
+            "timestamps": [tx_time],
+            "risk_signals": [
+                f"XGBoost Risk Score: {score_str} ({evidence.risk_level})",
+                f"Isolation Forest Anomaly Score: {anom_str}"
+            ] + (evidence.network_signals[:2] if evidence.network_signals else [])
+        }
+
+        ai_interp_dict = {
+            "likely_explanation": f"Hypothesized pattern: {typology}. {exec_summary}",
+            "investigation_recommendation": actions
+        }
+
         # Invoke Gemini 1.5 if API key is present
         if settings.GEMINI_API_KEY and "your-gemini" not in settings.GEMINI_API_KEY:
             try:
@@ -421,12 +480,17 @@ class RiskEvidenceCompiler:
                 client = genai.Client(api_key=settings.GEMINI_API_KEY)
                 prompt = (
                     "You are 'UpayAche AI Assistant', an MFS risk and forensic intelligence copilot.\n"
-                    "CRITICAL SECURITY INVARIANTS:\n"
-                    "1. You are EXPLAINING pre-computed ML results. You must NEVER compute, guess, or invent a numerical risk score.\n"
-                    f"2. Exact XGBoost risk score: {score_str} (Level: {evidence.risk_level}). Exact Isolation Forest anomaly score: {anom_str}.\n"
-                    "3. If any metric is None or unavailable, state explicitly that it is unavailable.\n"
-                    "4. Base your summary exclusively on the structured evidence below:\n\n"
-                    f"{json.dumps(evidence.model_dump(), indent=2)}\n\n"
+                    "CRITICAL GROUNDING & SAFETY INVARIANTS:\n"
+                    "1. CLEARLY DISTINGUISH:\n"
+                    "   - FACTS FROM EVIDENCE (wallet IDs, transaction IDs, amounts, timestamps, risk signals)\n"
+                    "   - AI INTERPRETATION (likely explanation, investigation recommendation)\n"
+                    "2. You are EXPLAINING pre-computed ML results. You must NEVER compute, guess, or invent a numerical risk score.\n"
+                    f"3. Exact XGBoost risk score: {score_str} (Level: {evidence.risk_level}). Exact Isolation Forest anomaly score: {anom_str}.\n"
+                    "4. ZERO FABRICATION: Do NOT invent wallet IDs, phone numbers, transaction amounts, or dates. All entities must be strictly grounded in the evidence JSON below.\n"
+                    "5. RESPONSIBLE AI: All conclusions are ADVISORY INVESTIGATION SIGNALS for human compliance triage, NOT confirmed fraud verdicts.\n"
+                    "   You have ZERO authority to block accounts, freeze balances, approve/deny transactions, or run SQL/code.\n"
+                    "6. Structure output strictly into 'What happened', 'Why risky', and 'What to investigate next', with a comprehensive Bangla summary.\n\n"
+                    f"EVIDENCE JSON:\n{json.dumps(evidence.model_dump(), indent=2)}\n\n"
                     f"USER / ANALYST INQUIRY: {inquiry or 'Explain the risk and investigation steps.'}\n\n"
                     "Return a JSON object conforming strictly to:\n"
                     "{\n"
@@ -436,6 +500,10 @@ class RiskEvidenceCompiler:
                     '  "risk_breakdown": "...",\n'
                     '  "anomaly_explanation": "...",\n'
                     '  "network_explanation": "...",\n'
+                    '  "what_happened": "...",\n'
+                    '  "why_risky": "...",\n'
+                    '  "what_to_investigate_next": ["...", "..."],\n'
+                    '  "bangla_summary": "...",\n'
                     '  "investigation_guidance": ["...", "..."],\n'
                     '  "recommended_actions": ["...", "..."]\n'
                     "}"
@@ -447,12 +515,13 @@ class RiskEvidenceCompiler:
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                         temperature=0.2,
-                        max_output_tokens=700
+                        max_output_tokens=800
                     )
                 )
 
                 if response.text:
                     parsed = json.loads(response.text)
+                    parsed_actions = parsed.get("recommended_actions", actions)
                     return AIExplanationTier(
                         executive_summary=parsed.get("executive_summary", exec_summary),
                         typology_hypothesis=parsed.get("typology_hypothesis", typology),
@@ -461,7 +530,19 @@ class RiskEvidenceCompiler:
                         anomaly_explanation=parsed.get("anomaly_explanation", anomaly_breakdown),
                         network_explanation=parsed.get("network_explanation", network_breakdown),
                         investigation_guidance=parsed.get("investigation_guidance", guidance),
-                        recommended_actions=parsed.get("recommended_actions", actions)
+                        recommended_actions=parsed_actions,
+                        what_happened=parsed.get("what_happened", what_h),
+                        why_risky=parsed.get("why_risky", why_r),
+                        what_to_investigate_next=parsed.get("what_to_investigate_next", parsed_actions),
+                        bangla_summary=parsed.get("bangla_summary", bn_sum),
+                        bangla_explanation=parsed.get("bangla_summary", bn_sum),
+                        advisory_label=advisory_label_text,
+                        responsible_ai_disclaimer=resp_disclaimer,
+                        facts_from_evidence=facts_dict,
+                        ai_interpretation={
+                            "likely_explanation": parsed.get("executive_summary", exec_summary),
+                            "investigation_recommendation": parsed_actions
+                        }
                     )
             except Exception as e:
                 logger.warning(f"Gemini tiered explanation failed, falling back to deterministic: {e}")
@@ -474,7 +555,16 @@ class RiskEvidenceCompiler:
             anomaly_explanation=anomaly_breakdown,
             network_explanation=network_breakdown,
             investigation_guidance=guidance,
-            recommended_actions=actions
+            recommended_actions=actions,
+            what_happened=what_h,
+            why_risky=why_r,
+            what_to_investigate_next=actions,
+            bangla_summary=bn_sum,
+            bangla_explanation=bn_sum,
+            advisory_label=advisory_label_text,
+            responsible_ai_disclaimer=resp_disclaimer,
+            facts_from_evidence=facts_dict,
+            ai_interpretation=ai_interp_dict
         )
 
 

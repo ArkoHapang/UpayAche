@@ -36,6 +36,21 @@ class InvestigationCaseUpdate(BaseModel):
     analyst_comment: Optional[str] = Field(None, description="Audit note recording reason for transition")
 
 
+class RecommendedWalletForReview(BaseModel):
+    wallet_id: str
+    wallet_number: str
+    phone_number_masked: str
+    connection_reason: str = "Direct counterparty to confirmed fraudulent transaction"
+    hop_distance: int = 1
+    transaction_relationship: str = "Primary Fund Counterparty"
+    relation: str = "COUNTERPARTY"
+    risk_tier: str = "MEDIUM"
+    recommendation: str = "Recommended for Review"
+    advisory_notice: str = (
+        "ADVISORY ONLY: Recommended for manual analyst triage. NEVER automatically blocked or penalized."
+    )
+
+
 class InvestigationCaseResponse(BaseModel):
     id: str
     case_number: str
@@ -51,6 +66,7 @@ class InvestigationCaseResponse(BaseModel):
     updated_at: str
     closed_at: Optional[str] = None
     notes: List[InvestigationNoteResponse] = []
+    recommended_wallets_for_review: List[RecommendedWalletForReview] = Field(default_factory=list)
 
 
 class InvestigationListResponse(BaseModel):

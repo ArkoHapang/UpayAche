@@ -13,7 +13,10 @@ from app.graph.analysis import (
     detect_cycles_in_graph,
     trace_transaction_chains,
     extract_ego_network,
-    format_graph_response
+    format_graph_response,
+    detect_mule_rings,
+    detect_fan_hubs,
+    find_shortest_suspicious_path
 )
 from app.graph.schemas import (
     NetworkGraphResponse,
@@ -160,6 +163,24 @@ class WalletNetworkService:
                 is_suspicious=c["is_suspicious"]
             ))
         return res
+
+    def get_mule_rings(self) -> List[Dict[str, Any]]:
+        """Return detected circular mule rings with participant details."""
+        return detect_mule_rings(self._graph)
+
+    def get_fan_hubs(self) -> Dict[str, Any]:
+        """Return fan-in aggregator and fan-out disperser hubs."""
+        in_hubs, out_hubs = detect_fan_hubs(self._graph)
+        return {
+            "fan_in_hubs": in_hubs,
+            "fan_out_hubs": out_hubs,
+            "total_fan_in": len(in_hubs),
+            "total_fan_out": len(out_hubs)
+        }
+
+    def get_shortest_suspicious_path(self, source_wallet_id: str, target_wallet_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Find the shortest path from wallet to target or nearest mule/suspicious wallet."""
+        return find_shortest_suspicious_path(self._graph, source_wallet_id, target_wallet_id)
 
     def get_wallet_node(self, wallet_id: str):
         """Retrieve node profile with connectivity metrics."""

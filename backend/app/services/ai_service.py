@@ -16,7 +16,9 @@ from app.db.repository import DataRepository, get_repository
 from app.schemas.ai import (
     AIInvestigationRequest,
     AIInvestigationResponse,
-    GeminiInvestigationReport
+    GeminiInvestigationReport,
+    FactsFromEvidence,
+    AIInterpretation
 )
 from app.core.security import CurrentUser
 
@@ -122,6 +124,38 @@ def fallback_investigation_report(evidence: Dict[str, Any], question: Optional[s
         "What evidence should the analyst verify?",
     ]
 
+    facts_obj = FactsFromEvidence(
+        wallet_ids=[wallet_id],
+        transaction_ids=[tx_hash],
+        amounts=[f"BDT {amount:,.2f}"],
+        timestamps=[tx.get("timestamp", "2026-01-15T08:00:00Z")],
+        risk_signals=[
+            f"Risk Tier: {wallet_profile.get('risk_tier', 'HIGH')}",
+            f"Velocity: {'High liquidity outflow' if amount >= 25000 else 'Moderate activity'}"
+        ]
+    )
+
+    ai_interp_obj = AIInterpretation(
+        likely_explanation=targeted_summary,
+        investigation_recommendation=actions
+    )
+
+    what_happened_text = (
+        f"Wallet {wallet_id} executed transaction {tx_hash} of BDT {amount:,.2f} ({tx.get('tx_type', 'P2P')}) "
+        f"at {tx.get('timestamp', '2026-01-15T08:00:00Z')}."
+    )
+    why_risky_text = (
+        f"Significant amount deviation and elevated velocity departing from account baseline. "
+        f"Assigned risk tier: {wallet_profile.get('risk_tier', 'HIGH')}."
+    )
+    bangla_text = (
+        f"তদন্ত নির্দেশিকা: {wallet_id} অ্যাকাউন্টে {amount:,.0f} টাকার লেনদেনে ঝুঁকি সংকেত শনাক্ত হয়েছে। "
+        f"এটি মিউল নেটওয়ার্ক বা ক্যাশ-আউট অপব্যবহারের নির্দেশক হতে পারে। চূড়ান্ত সিদ্ধান্তের পূর্বে মানবিক যাচাই আবশ্যক।"
+    )
+    advisory_lbl = (
+        "AI-generated investigation assistance. Verify all conclusions against the evidence. Final decisions remain with authorized analysts."
+    )
+
     return GeminiInvestigationReport(
         executive_summary=exec_summary,
         summary=targeted_summary,
@@ -132,7 +166,15 @@ def fallback_investigation_report(evidence: Dict[str, Any], question: Optional[s
         relevant_risk_factors=risk_factors,
         relevant_network_information=network_info,
         suggested_investigation_questions=suggested_questions,
-        recommended_actions=actions
+        recommended_actions=actions,
+        facts_from_evidence=facts_obj,
+        ai_interpretation=ai_interp_obj,
+        what_happened=what_happened_text,
+        why_risky=why_risky_text,
+        what_to_investigate_next=actions,
+        bangla_summary=bangla_text,
+        bangla_explanation=bangla_text,
+        advisory_label=advisory_lbl
     )
 
 
@@ -149,9 +191,27 @@ class AICopilotService:
         from app.services.evidence_compiler import get_risk_evidence_compiler
         compiler = get_risk_evidence_compiler()
         structured_evidence = compiler.compile_evidence_for_case(case["id"])
-        tiered = compiler.generate_tiered_response(structured_evidence, inquiry=req.question)
+        tiered = compiler.generate_tiered_response(structured_evidence, inquiry=req.question, language=req.language)
 
-        # 2. Build GeminiInvestigationReport mapping seamlessly to tiered output
+        # 2. Build structured facts from evidence and AI interpretation
+        facts_data = tiered.ai_explanation.facts_from_evidence or {}
+        facts_obj = FactsFromEvidence(
+            wallet_ids=facts_data.get("wallet_ids", [structured_evidence.transaction_context.get("sender_masked", "Unavailable")]),
+            transaction_ids=facts_data.get("transaction_ids", [structured_evidence.transaction_context.get("tx_hash", "TX-RECORD")]),
+            amounts=facts_data.get("amounts", [f"BDT {structured_evidence.transaction_context.get('amount_bdt', 0):,.2f}"]),
+            timestamps=facts_data.get("timestamps", [structured_evidence.transaction_context.get("timestamp", "Recent")]),
+            risk_signals=facts_data.get("risk_signals", [
+                f"XGBoost Risk Score: {structured_evidence.risk_score} ({structured_evidence.risk_level})",
+                f"Isolation Forest Anomaly Score: {structured_evidence.anomaly_score}"
+            ])
+        )
+
+        ai_interp_obj = AIInterpretation(
+            likely_explanation=tiered.ai_explanation.executive_summary,
+            investigation_recommendation=tiered.ai_explanation.recommended_actions
+        )
+
+        # 3. Build GeminiInvestigationReport mapping seamlessly to tiered output
         report = GeminiInvestigationReport(
             executive_summary=tiered.ai_explanation.executive_summary,
             summary=tiered.ai_explanation.risk_breakdown,
@@ -172,7 +232,15 @@ class AICopilotService:
                 "What does a high risk score mean?",
                 "What is a mule network?"
             ],
-            recommended_actions=tiered.ai_explanation.recommended_actions
+            recommended_actions=tiered.ai_explanation.recommended_actions,
+            facts_from_evidence=facts_obj,
+            ai_interpretation=ai_interp_obj,
+            what_happened=tiered.ai_explanation.what_happened,
+            why_risky=tiered.ai_explanation.why_risky,
+            what_to_investigate_next=tiered.ai_explanation.what_to_investigate_next or tiered.ai_explanation.recommended_actions,
+            bangla_summary=tiered.ai_explanation.bangla_summary,
+            bangla_explanation=tiered.ai_explanation.bangla_explanation or tiered.ai_explanation.bangla_summary,
+            advisory_label=tiered.ai_explanation.advisory_label or "AI-generated investigation assistance. Verify all conclusions against the evidence. Final decisions remain with authorized analysts."
         )
 
         # 3. Save intelligence note to the case

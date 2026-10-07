@@ -69,9 +69,10 @@ import {
   AIInvestigationReportData,
   WalletNetworkSummaryData,
   NetworkGraphData,
-  FeatureContributionData
+  FeatureContributionData,
 } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import CompositeRiskBreakdownCard from "@/components/risk/CompositeRiskBreakdownCard";
 
 // Timeline Event Contract
 interface TimelineEvent {
@@ -732,6 +733,11 @@ export default function TransactionInvestigationPage() {
                 <span className="text-[10px] text-slate-400">Zero PII • Masked synthetic telemetry</span>
               </div>
             </header>
+
+            {/* Composite Risk Attribution & Bangladesh MFS Intelligence Triad */}
+            {riskDetail && (
+              <CompositeRiskBreakdownCard riskDetail={riskDetail} />
+            )}
 
             {/* ========================================================================= */}
             {/* 3-COLUMN MAIN BODY: LEFT, CENTER, RIGHT                                   */}

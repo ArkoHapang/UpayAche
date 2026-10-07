@@ -10,6 +10,7 @@ Calculates node and graph-level topological intelligence:
 """
 
 from typing import Dict, Any, List, Set, Tuple, Optional
+from collections import defaultdict
 import networkx as nx
 from app.graph.schemas import (
     GraphNode,
@@ -269,6 +270,147 @@ def extract_ego_network(
     return G.subgraph(subgraph_nodes).copy()
 
 
+def detect_mule_rings(G: nx.MultiDiGraph, max_cycle_length: int = 5) -> List[Dict[str, Any]]:
+    """
+    Detect circular transaction loops with detailed participant roles and total loop volume.
+    """
+    simple_di = nx.DiGraph(G)
+    rings = []
+    for idx, cycle in enumerate(nx.simple_cycles(simple_di, length_bound=max_cycle_length)):
+        if 3 <= len(cycle) <= max_cycle_length:
+            wallet_details = []
+            loop_vol = 0.0
+            for i, node in enumerate(cycle):
+                next_node = cycle[(i + 1) % len(cycle)]
+                ndata = G.nodes.get(node, {})
+                wallet_details.append({
+                    "wallet_id": node,
+                    "wallet_number": ndata.get("wallet_number", f"WAL-{node[:8]}"),
+                    "risk_tier": ndata.get("risk_tier", "LOW"),
+                    "is_synthetic_mule": bool(ndata.get("is_synthetic_mule", False))
+                })
+                for _, _, edata in G.edges([node, next_node], data=True):
+                    loop_vol += float(edata.get("amount", 0.0))
+
+            rings.append({
+                "ring_id": f"RING-{idx + 1:02d}",
+                "cycle_length": len(cycle),
+                "wallets": cycle,
+                "participants": wallet_details,
+                "loop_volume_bdt": round(loop_vol, 2),
+                "typology": "CIRCULAR_MULE_RING",
+                "risk_assessment": "SUSPICIOUS_LAYERING"
+            })
+        if len(rings) >= 20:
+            break
+    return rings
+
+
+def detect_fan_hubs(G: nx.MultiDiGraph) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Detect Fan-in hubs (aggregators) and Fan-out hubs (dispersers/smurfers).
+    """
+    fan_in_hubs = []
+    fan_out_hubs = []
+
+    for node in G.nodes():
+        in_deg = G.in_degree(node)
+        out_deg = G.out_degree(node)
+        ndata = G.nodes.get(node, {})
+        wnum = ndata.get("wallet_number", f"WAL-{node[:8]}")
+        tier = ndata.get("risk_tier", "LOW")
+
+        # Fan-in: in_deg >= 3 and receives from many unique senders
+        if in_deg >= 3 and in_deg >= 2 * max(1, out_deg):
+            in_amt = sum(float(d.get("amount", 0.0)) for _, _, d in G.in_edges(node, data=True))
+            fan_in_hubs.append({
+                "wallet_id": node,
+                "wallet_number": wnum,
+                "in_degree": in_deg,
+                "out_degree": out_deg,
+                "fan_ratio": round(in_deg / max(1, out_deg), 2),
+                "total_inflow_bdt": round(in_amt, 2),
+                "risk_tier": tier,
+                "hub_type": "FAN_IN_AGGREGATOR"
+            })
+
+        # Fan-out: out_deg >= 3 and disperses to many unique recipients
+        if out_deg >= 3 and out_deg >= 2 * max(1, in_deg):
+            out_amt = sum(float(d.get("amount", 0.0)) for _, _, d in G.out_edges(node, data=True))
+            fan_out_hubs.append({
+                "wallet_id": node,
+                "wallet_number": wnum,
+                "in_degree": in_deg,
+                "out_degree": out_deg,
+                "fan_ratio": round(out_deg / max(1, in_deg), 2),
+                "total_outflow_bdt": round(out_amt, 2),
+                "risk_tier": tier,
+                "hub_type": "FAN_OUT_DISPERSER"
+            })
+
+    fan_in_hubs.sort(key=lambda x: (x["in_degree"], x["total_inflow_bdt"]), reverse=True)
+    fan_out_hubs.sort(key=lambda x: (x["out_degree"], x["total_outflow_bdt"]), reverse=True)
+    return fan_in_hubs, fan_out_hubs
+
+
+def find_shortest_suspicious_path(
+    G: nx.MultiDiGraph,
+    source_wallet_id: str,
+    target_wallet_id: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    """
+    Find the shortest directed path from source wallet to target, or to any known mule/high-risk wallet.
+    """
+    if not G.has_node(source_wallet_id):
+        return None
+
+    simple_di = nx.DiGraph(G)
+
+    if target_wallet_id and G.has_node(target_wallet_id):
+        try:
+            path = nx.shortest_path(simple_di, source=source_wallet_id, target=target_wallet_id)
+            return {
+                "source": source_wallet_id,
+                "target": target_wallet_id,
+                "path_wallets": path,
+                "hops": len(path) - 1,
+                "path_wallet_numbers": [G.nodes[n].get("wallet_number", n) for n in path]
+            }
+        except Exception:
+            return None
+
+    suspicious_nodes = [
+        n for n, d in G.nodes(data=True)
+        if n != source_wallet_id and (
+            d.get("is_synthetic_mule") or d.get("risk_tier") in ("HIGH", "CRITICAL")
+        )
+    ]
+
+    shortest_p = None
+    min_len = 999
+    target_found = None
+
+    for s_node in suspicious_nodes:
+        try:
+            p = nx.shortest_path(simple_di, source=source_wallet_id, target=s_node)
+            if len(p) < min_len:
+                min_len = len(p)
+                shortest_p = p
+                target_found = s_node
+        except Exception:
+            continue
+
+    if shortest_p:
+        return {
+            "source": source_wallet_id,
+            "target": target_found,
+            "path_wallets": shortest_p,
+            "hops": len(shortest_p) - 1,
+            "path_wallet_numbers": [G.nodes[n].get("wallet_number", n) for n in shortest_p]
+        }
+    return None
+
+
 def format_graph_response(
     subgraph: nx.MultiDiGraph,
     component_map: Optional[Dict[str, int]] = None,
@@ -343,11 +485,26 @@ def format_graph_response(
         edges_list.append(edge_obj)
 
     # Graph-level statistics
+    mule_rings = detect_mule_rings(subgraph)
+    fan_in_hubs, fan_out_hubs = detect_fan_hubs(subgraph)
+
+    # Cluster highlighting
+    cluster_counts = defaultdict(int)
+    for n in nodes_list:
+        cluster_counts[n.component_id] += 1
+
     graph_metadata = {
         "node_count": len(nodes_list),
         "edge_count": len(edges_list),
         "density": round(float(nx.density(subgraph)), 6) if len(nodes_list) > 1 else 0.0,
-        "is_weakly_connected": nx.is_weakly_connected(subgraph) if len(nodes_list) > 1 else True
+        "is_weakly_connected": nx.is_weakly_connected(subgraph) if len(nodes_list) > 1 else True,
+        "mule_rings": mule_rings,
+        "mule_ring_count": len(mule_rings),
+        "fan_in_hubs": fan_in_hubs[:8],
+        "fan_out_hubs": fan_out_hubs[:8],
+        "fan_in_count": len(fan_in_hubs),
+        "fan_out_count": len(fan_out_hubs),
+        "cluster_distribution": dict(cluster_counts)
     }
 
     return NetworkGraphResponse(

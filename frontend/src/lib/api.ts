@@ -73,6 +73,19 @@ export interface InvestigationNoteItem {
   created_at: string;
 }
 
+export interface RecommendedWalletForReviewData {
+  wallet_id: string;
+  wallet_number: string;
+  phone_number_masked: string;
+  connection_reason?: string;
+  hop_distance?: number;
+  transaction_relationship?: string;
+  relation: string;
+  risk_tier: string;
+  recommendation: string;
+  advisory_notice: string;
+}
+
 export interface InvestigationCaseItem {
   id: string;
   case_number: string;
@@ -88,6 +101,7 @@ export interface InvestigationCaseItem {
   updated_at: string;
   closed_at?: string;
   notes?: InvestigationNoteItem[];
+  recommended_wallets_for_review?: RecommendedWalletForReviewData[];
 }
 
 export interface ModelStatusData {
@@ -276,6 +290,8 @@ export interface TransactionItem {
   pattern_id?: number;
   pattern_code?: string;
   pattern_name?: string;
+  typology?: string;
+  evidence_features?: string[];
   is_fraud: number;
   is_anomaly: number;
   risk_score: number;
@@ -314,6 +330,32 @@ export interface FeatureContributionData {
   human_readable_explanation: string;
 }
 
+export interface CompositeRiskContributionData {
+  supervised_score: number;
+  supervised_weight: number;
+  anomaly_score: number;
+  anomaly_weight: number;
+  graph_score: number;
+  graph_weight: number;
+  composite_score: number;
+  alert_threshold: number;
+  threshold_crossed: boolean;
+  threshold_reason: string;
+  shap_scope_notice: string;
+}
+
+export interface BangladeshMFSIntelligenceData {
+  typology_code: string;
+  typology_name: string;
+  typology_name_bn: string;
+  what_happened: string;
+  why_risky: string;
+  what_to_investigate_next: string[];
+  bangla_summary: string;
+  responsible_ai_disclaimer: string;
+  evidence_features?: string[];
+}
+
 export interface TransactionRiskDetailData {
   transaction_id: string;
   risk_score: number;
@@ -326,6 +368,10 @@ export interface TransactionRiskDetailData {
   summary_narrative: string;
   model_version: string;
   timestamp: string;
+  composite_breakdown?: CompositeRiskContributionData;
+  mfs_intelligence?: BangladeshMFSIntelligenceData;
+  risk_change_reason?: string;
+  responsible_ai_notice?: string;
 }
 
 export interface CreateCaseParams {
@@ -334,6 +380,19 @@ export interface CreateCaseParams {
   target_wallet_id: string;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   primary_transaction_id?: string;
+}
+
+export interface FactsFromEvidenceData {
+  wallet_ids?: string[];
+  transaction_ids?: string[];
+  amounts?: string[];
+  timestamps?: string[];
+  risk_signals?: string[];
+}
+
+export interface AIInterpretationData {
+  likely_explanation: string;
+  investigation_recommendation?: string[];
 }
 
 export interface AIInvestigationReportData {
@@ -349,6 +408,14 @@ export interface AIInvestigationReportData {
   recommended_actions: string[];
   structured_evidence?: StructuredRiskEvidence | null;
   tiered_response?: TieredInvestigationResponse | null;
+  facts_from_evidence?: FactsFromEvidenceData | null;
+  ai_interpretation?: AIInterpretationData | null;
+  what_happened?: string;
+  why_risky?: string;
+  what_to_investigate_next?: string[];
+  bangla_summary?: string;
+  bangla_explanation?: string;
+  advisory_label?: string;
 }
 
 export async function fetchTransactions(
@@ -403,10 +470,12 @@ export async function requestAICopilotInvestigation(
   caseId: string,
   focusArea: string = "MULE_STRUCTURING_ANALYSIS",
   question?: string | null,
-  token?: string | null
+  token?: string | null,
+  language?: string | null
 ): Promise<AIInvestigationReportData> {
   const payload: Record<string, unknown> = { case_id: caseId, focus_area: focusArea };
   if (question) payload.question = question;
+  if (language) payload.language = language;
 
   const res = await fetch(`${API_BASE}/api/v1/ai/investigate`, {
     method: "POST",
@@ -687,6 +756,14 @@ export interface TieredInvestigationResponse {
     network_explanation: string;
     investigation_guidance: string[];
     recommended_actions: string[];
+    what_happened?: string;
+    why_risky?: string;
+    what_to_investigate_next?: string[];
+    bangla_summary?: string;
+    bangla_explanation?: string;
+    advisory_label?: string;
+    facts_from_evidence?: FactsFromEvidenceData;
+    ai_interpretation?: AIInterpretationData;
   };
 }
 
@@ -848,6 +925,36 @@ export async function resetDemoData(token?: string | null): Promise<{ status: st
     headers: getHeaders(token),
   });
   if (!res.ok) throw new Error(`Failed to reset demo data: HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchMuleRings(token?: string | null): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/api/v1/network/mule-rings`, {
+    headers: getHeaders(token),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch mule rings: HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchFanHubs(token?: string | null): Promise<{ fan_in_hubs: any[]; fan_out_hubs: any[]; total_fan_in: number; total_fan_out: number }> {
+  const res = await fetch(`${API_BASE}/api/v1/network/fan-hubs`, {
+    headers: getHeaders(token),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch fan hubs: HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchShortestSuspiciousPath(
+  sourceWalletId: string,
+  targetWalletId?: string,
+  token?: string | null
+): Promise<any> {
+  const q = new URLSearchParams({ source_wallet_id: sourceWalletId });
+  if (targetWalletId) q.set("target_wallet_id", targetWalletId);
+  const res = await fetch(`${API_BASE}/api/v1/network/shortest-path?${q.toString()}`, {
+    headers: getHeaders(token),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch shortest suspicious path: HTTP ${res.status}`);
   return res.json();
 }
 

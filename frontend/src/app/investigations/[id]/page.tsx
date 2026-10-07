@@ -62,6 +62,7 @@ import {
 } from "@/lib/api";
 import AIInvestigationPanel from "@/components/investigation/AIInvestigationPanel";
 import CompactNetworkPreview from "@/components/investigation/CompactNetworkPreview";
+import CompositeRiskBreakdownCard from "@/components/risk/CompositeRiskBreakdownCard";
 
 export default function InvestigationWorkspaceRoute() {
   return (
@@ -470,6 +471,11 @@ function InvestigationWorkspaceContent() {
             
             {/* EVIDENCE SECTION: Tabs / Stacks */}
             <div className="space-y-6">
+
+              {/* Composite Risk Attribution & Bangladesh MFS Intelligence Triad */}
+              {riskDetail && (
+                <CompositeRiskBreakdownCard riskDetail={riskDetail} />
+              )}
               
               {/* 1. Transaction Evidence */}
               <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
@@ -755,6 +761,113 @@ function InvestigationWorkspaceContent() {
                   token={token}
                 />
               </div>
+
+              {/* 5b. Case-Linked Intelligence: Connected Wallets Recommended for Review */}
+              {(caseData?.recommended_wallets_for_review && caseData.recommended_wallets_for_review.length > 0) || caseData?.resolution === "CONFIRMED_FRAUD" ? (
+                <div className="bg-slate-900/95 border border-amber-500/40 rounded-2xl p-5 shadow-xl space-y-4 ring-1 ring-amber-500/20 animate-fadeIn">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-amber-950/60 border border-amber-800/60 text-amber-400">
+                        <Network className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+                            5b. Case-Linked Network Intelligence
+                          </h3>
+                          <Badge variant="outline" className="border-amber-500/50 bg-amber-950/40 text-amber-300 font-mono text-[10px]">
+                            FLAGGED FOR TRIAGE
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-slate-400 font-mono">
+                          Graph counterparties linked to confirmed incident recommended for human investigation
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="px-2.5 py-1 rounded-lg bg-slate-950/80 border border-amber-500/30 text-[10px] font-mono text-amber-300">
+                      HUMAN-IN-THE-LOOP ONLY • NEVER AUTO-BLOCKED
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs font-mono text-slate-300 flex items-start gap-2.5">
+                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-amber-300 font-semibold">Strict Responsible AI Boundary: </strong>
+                      Following fraud confirmation on case <span className="text-white font-mono">{caseData?.case_number}</span>, adjacent network counterparties are flagged for 
+                      <em className="text-cyan-300 not-italic font-bold"> manual review only</em>. Under UpayAche ethical standards, no wallet balances, transactions, or accounts are automatically frozen without analyst sign-off.
+                    </div>
+                  </div>
+
+                  {caseData?.recommended_wallets_for_review && caseData.recommended_wallets_for_review.length > 0 ? (
+                    <div className="space-y-2.5">
+                      {caseData.recommended_wallets_for_review.map((rec, rIdx) => (
+                        <div
+                          key={rIdx}
+                          className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono hover:border-amber-500/40 transition-colors"
+                        >
+                          <div className="space-y-1.5 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-white text-sm">{rec.wallet_id}</span>
+                              <span className="text-slate-400 text-xs font-mono">
+                                ({rec.wallet_number || rec.phone_number_masked})
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] border-amber-500/50 text-amber-300 bg-amber-950/30 font-mono font-bold"
+                              >
+                                {rec.recommendation || "Recommended for Review"}
+                              </Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] border-blue-500/40 text-blue-300 bg-blue-950/30 font-mono"
+                              >
+                                {rec.hop_distance ?? 1}-hop distance
+                              </Badge>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-0.5">
+                              <div>
+                                <span className="text-slate-500">Connection Reason: </span>
+                                <span className="text-slate-300">
+                                  {rec.connection_reason || "Direct counterparty to confirmed fraudulent transaction"}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Transaction Relationship: </span>
+                                <span className="text-cyan-300 font-semibold">
+                                  {rec.transaction_relationship || rec.relation}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="text-[10px] text-amber-400/90 pt-0.5">
+                              {rec.advisory_notice}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0">
+                            <Button
+                              asChild
+                              size="sm"
+                              variant="outline"
+                              className="text-xs h-8 border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-mono"
+                            >
+                              <Link href={`/network/${rec.wallet_id}`}>
+                                Inspect in Graph <ArrowUpRight className="w-3.5 h-3.5 ml-1 text-cyan-400" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-center text-xs font-mono text-slate-500 border border-slate-800/60 rounded-xl bg-slate-950/40">
+                      Counterparty analysis active. Refreshing linked wallet recommendation queue...
+                    </div>
+                  )}
+                </div>
+              ) : null}
 
               {/* 6. Case Status Progression & History */}
               <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-5">

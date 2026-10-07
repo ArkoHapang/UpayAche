@@ -21,12 +21,15 @@ import {
   fetchOverviewGraph,
   fetchWalletEgoGraph,
   fetchActiveInvestigations,
+  fetchMuleRings,
+  fetchFanHubs,
   GraphNodeItem,
   GraphEdgeItem,
   InvestigationCaseItem,
 } from "@/lib/api";
 import WalletInspectorDrawer from "@/components/network/WalletInspectorDrawer";
 import GraphControlsToolbar from "@/components/network/GraphControlsToolbar";
+import NetworkCanvas2D from "@/components/network/NetworkCanvas2D";
 import { useAuth } from "@/context/AuthContext";
 
 // Dynamic client-side only import of WebGL 3D Canvas
@@ -81,11 +84,16 @@ function NetworkExplorerInner() {
   const [error, setError] = useState<string | null>(null);
 
   // Filters & Modes
+  const [viewMode, setViewMode] = useState<"3D" | "2D">("3D");
   const [riskFilter, setRiskFilter] = useState<string>("ALL");
+  const [topologyFilter, setTopologyFilter] = useState<string>("ALL");
   const [txTypeFilter, setTxTypeFilter] = useState<string>("ALL");
   const [showNeighborsOnly, setShowNeighborsOnly] = useState<boolean>(false);
   const [highlightSuspiciousChains, setHighlightSuspiciousChains] = useState<boolean>(true);
   const [hops, setHops] = useState<number>(1);
+  const [muleRings, setMuleRings] = useState<any[]>([]);
+  const [fanHubs, setFanHubs] = useState<any>(null);
+  const [showIntelligencePanel, setShowIntelligencePanel] = useState<boolean>(false);
 
   // Load Real Graph Data from Backend FastAPI Service
   const loadGraphData = useCallback(async () => {
@@ -119,6 +127,18 @@ function NetworkExplorerInner() {
       } catch (cErr) {
         console.warn("Could not fetch active cases:", cErr);
       }
+
+      // Load Mule Rings & Fan Hubs
+      try {
+        const [rings, hubs] = await Promise.all([
+          fetchMuleRings(token),
+          fetchFanHubs(token)
+        ]);
+        setMuleRings(rings || []);
+        setFanHubs(hubs || null);
+      } catch (gErr) {
+        console.warn("Could not fetch graph intelligence metrics:", gErr);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load network graph data";
       setError(msg);
@@ -131,11 +151,29 @@ function NetworkExplorerInner() {
     loadGraphData();
   }, [loadGraphData]);
 
-  // Memoized Filtered Nodes
+  // Memoized Filtered Nodes (Risk & Topology Archetypes)
   const filteredNodes = useMemo(() => {
-    if (riskFilter === "ALL") return nodes;
-    return nodes.filter((n) => n.risk?.risk_tier === riskFilter);
-  }, [nodes, riskFilter]);
+    let result = nodes;
+    if (riskFilter !== "ALL") {
+      result = result.filter((n) => n.risk?.risk_tier === riskFilter);
+    }
+    if (topologyFilter === "HIGH_RISK") {
+      result = result.filter(
+        (n) => n.risk?.risk_tier === "HIGH" || n.risk?.risk_tier === "CRITICAL"
+      );
+    } else if (topologyFilter === "MULE_RING") {
+      result = result.filter(
+        (n) => n.risk?.in_cycle || (n.risk?.mule_cluster_role && n.risk.mule_cluster_role !== "NONE")
+      );
+    } else if (topologyFilter === "FAN_IN") {
+      result = result.filter((n) => (n.inbound_transactions || 0) >= 3);
+    } else if (topologyFilter === "FAN_OUT") {
+      result = result.filter((n) => (n.outbound_transactions || 0) >= 3);
+    } else if (topologyFilter === "ISOLATED") {
+      result = result.filter((n) => n.degree <= 1);
+    }
+    return result;
+  }, [nodes, riskFilter, topologyFilter]);
 
   // Memoized Filtered Edges (by transaction type)
   const filteredEdges = useMemo(() => {
@@ -165,6 +203,7 @@ function NetworkExplorerInner() {
     setFocusedNodeId(null);
     setShowNeighborsOnly(false);
     setRiskFilter("ALL");
+    setTopologyFilter("ALL");
     setTxTypeFilter("ALL");
     setResetSignal((prev) => prev + 1);
   };
@@ -192,6 +231,8 @@ function NetworkExplorerInner() {
         onResetView={handleResetView}
         riskFilter={riskFilter}
         onRiskFilterChange={setRiskFilter}
+        topologyFilter={topologyFilter}
+        onTopologyFilterChange={setTopologyFilter}
         txTypeFilter={txTypeFilter}
         onTxTypeFilterChange={setTxTypeFilter}
         showNeighborsOnly={showNeighborsOnly}
@@ -205,7 +246,155 @@ function NetworkExplorerInner() {
         selectedNodeId={selectedNode?.id || null}
       />
 
-      {/* Main 3D WebGL Canvas Viewport */}
+      {/* Top Floating Control Bar: 2D/3D Mode, Graph Intelligence & Responsible AI */}
+      <div className="absolute top-16 left-6 z-30 flex flex-wrap items-center gap-2 pointer-events-auto">
+        <div className="flex items-center bg-slate-900/90 border border-slate-800 rounded-lg p-0.5 font-mono text-xs shadow-lg">
+          <button
+            onClick={() => setViewMode("3D")}
+            className={`px-3 py-1 rounded-md transition-colors ${
+              viewMode === "3D"
+                ? "bg-[#007BFF] text-white font-bold"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            3D WebGL
+          </button>
+          <button
+            onClick={() => setViewMode("2D")}
+            className={`px-3 py-1 rounded-md transition-colors ${
+              viewMode === "2D"
+                ? "bg-[#007BFF] text-white font-bold"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            2D Canvas
+          </button>
+        </div>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowIntelligencePanel((prev) => !prev)}
+          className={`h-8 text-xs font-mono border-slate-800 shadow-lg ${
+            showIntelligencePanel
+              ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
+              : "bg-slate-900/90 text-slate-300 hover:text-white"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5 mr-1 text-amber-400" />
+          Graph Intelligence ({muleRings.length} Rings • {fanHubs?.total_fan_in || 0} Hubs)
+        </Button>
+
+        <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono shadow-md">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>
+            Network relationships are investigation signals and require analyst review. Graph topology is presented as analytical evidence, not proof of criminal activity.
+          </span>
+        </div>
+      </div>
+
+      {/* Slide-out Graph Intelligence Panel */}
+      {showIntelligencePanel && (
+        <div className="absolute top-28 left-6 z-30 w-96 max-h-[75vh] overflow-y-auto bg-slate-950/95 border border-slate-800 rounded-2xl p-4 shadow-2xl font-mono text-xs space-y-4 backdrop-blur-md pointer-events-auto">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-amber-400" />
+              Graph Topology Intelligence
+            </span>
+            <button
+              onClick={() => setShowIntelligencePanel(false)}
+              className="text-slate-500 hover:text-white text-xs px-1"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Mule Rings Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 uppercase font-bold">
+                Circular Mule Rings (Layering Cycles)
+              </span>
+              <Badge variant="outline" className="border-rose-500/40 text-rose-400 text-[9px]">
+                {muleRings.length} Detected
+              </Badge>
+            </div>
+            {muleRings.length === 0 ? (
+              <p className="text-[11px] text-slate-500 italic">No elementary 3-5 hop cycles in active subgraph.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                {muleRings.slice(0, 5).map((ring, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      if (ring.wallets && ring.wallets[0]) {
+                        handleSearchSelect(ring.wallets[0]);
+                      }
+                    }}
+                    className="p-2 rounded-lg bg-slate-900 border border-slate-800/80 hover:border-amber-500/50 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-300">{ring.ring_id}</span>
+                      <span className="text-slate-400 text-[10px]">{ring.cycle_length} hops</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                      Wallets: {ring.wallets.join(" → ")}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Fan-In & Fan-Out Hubs Section */}
+          <div className="space-y-2 pt-2 border-t border-slate-800/80">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 uppercase font-bold">
+                Fan-In Aggregators & Dispersers
+              </span>
+              <Badge variant="outline" className="border-blue-500/40 text-blue-400 text-[9px]">
+                High Centrality
+              </Badge>
+            </div>
+            {fanHubs?.fan_in_hubs && fanHubs.fan_in_hubs.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="text-[9px] text-cyan-400 font-bold uppercase block">Fan-In (Money Aggregators):</span>
+                {fanHubs.fan_in_hubs.slice(0, 3).map((h: any, i: number) => (
+                  <div
+                    key={i}
+                    onClick={() => handleSearchSelect(h.wallet_id)}
+                    className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between cursor-pointer hover:border-cyan-400"
+                  >
+                    <span className="text-slate-200">{h.wallet_number}</span>
+                    <span className="text-[10px] text-cyan-300">
+                      {h.in_degree} in ({h.fan_ratio}x)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {fanHubs?.fan_out_hubs && fanHubs.fan_out_hubs.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[9px] text-purple-400 font-bold uppercase block">Fan-Out (Dispersers / Smurfing):</span>
+                {fanHubs.fan_out_hubs.slice(0, 3).map((h: any, i: number) => (
+                  <div
+                    key={i}
+                    onClick={() => handleSearchSelect(h.wallet_id)}
+                    className="p-1.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between cursor-pointer hover:border-purple-400"
+                  >
+                    <span className="text-slate-200">{h.wallet_number}</span>
+                    <span className="text-[10px] text-purple-300">
+                      {h.out_degree} out ({h.fan_ratio}x)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Main WebGL 3D or 2D Canvas Viewport */}
       <div className="flex-1 w-full h-full relative">
         {isLoading && nodes.length === 0 ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-mono text-xs">
@@ -222,7 +411,7 @@ function NetworkExplorerInner() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : viewMode === "3D" ? (
           <NetworkCanvas3D
             nodes={filteredNodes}
             edges={filteredEdges}
@@ -233,6 +422,16 @@ function NetworkExplorerInner() {
             showNeighborsOnly={showNeighborsOnly}
             highlightSuspiciousChains={highlightSuspiciousChains}
             resetSignal={resetSignal}
+          />
+        ) : (
+          <NetworkCanvas2D
+            nodes={filteredNodes}
+            edges={filteredEdges}
+            selectedNodeId={selectedNode?.id || null}
+            onSelectNode={handleSelectNode}
+            onSelectEdge={handleSelectEdge}
+            focusedNodeId={focusedNodeId}
+            showNeighborsOnly={showNeighborsOnly}
           />
         )}
 
@@ -270,6 +469,8 @@ function NetworkExplorerInner() {
         <WalletInspectorDrawer
           selectedNode={selectedNode}
           selectedEdge={selectedEdge}
+          edges={edges}
+          nodes={nodes}
           onClose={() => {
             setSelectedNode(null);
             setSelectedEdge(null);

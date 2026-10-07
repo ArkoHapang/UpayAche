@@ -162,6 +162,22 @@ export default function TransactionsPage() {
           }
         />
 
+        {/* Responsible AI Invariant Notice */}
+        <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs font-mono">
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
+            <span className="text-amber-900 font-bold">
+              INVESTIGATION PROTOCOL: Risk Signal ≠ Confirmed Fraud
+            </span>
+            <span className="hidden md:inline text-amber-800 text-[11px]">
+              — Scores represent statistical triage priority for human compliance review.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300 shrink-0">
+            ZERO AUTO-SUSPENSIONS
+          </span>
+        </div>
+
         {/* Metric Cards Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard

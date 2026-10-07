@@ -26,6 +26,8 @@ interface GraphControlsToolbarProps {
   onResetView: () => void;
   riskFilter: string;
   onRiskFilterChange: (filter: string) => void;
+  topologyFilter?: string;
+  onTopologyFilterChange?: (filter: string) => void;
   txTypeFilter: string;
   onTxTypeFilterChange: (type: string) => void;
   showNeighborsOnly: boolean;
@@ -46,6 +48,8 @@ export default function GraphControlsToolbar({
   onResetView,
   riskFilter,
   onRiskFilterChange,
+  topologyFilter = "ALL",
+  onTopologyFilterChange,
   txTypeFilter,
   onTxTypeFilterChange,
   showNeighborsOnly,
@@ -143,8 +147,27 @@ export default function GraphControlsToolbar({
           </select>
         </div>
 
+        {/* Filter by Topology Archetype (Judge Feedback) */}
+        {onTopologyFilterChange && (
+          <div className="flex items-center gap-1">
+            <select
+              value={topologyFilter}
+              onChange={(e) => onTopologyFilterChange(e.target.value)}
+              className="bg-slate-900 border border-slate-700/80 rounded-xl px-2 py-1 text-xs font-mono text-cyan-300 focus:outline-none"
+              title="Filter by topology archetype"
+            >
+              <option value="ALL">All Archetypes</option>
+              <option value="HIGH_RISK">High-Risk Wallets</option>
+              <option value="MULE_RING">Mule Rings / Cycles</option>
+              <option value="FAN_IN">Fan-In Hubs</option>
+              <option value="FAN_OUT">Fan-Out Hubs</option>
+              <option value="ISOLATED">Isolated Wallets</option>
+            </select>
+          </div>
+        )}
+
         {/* Filter by Transaction Type */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden lg:flex items-center gap-1">
           <select
             value={txTypeFilter}
             onChange={(e) => onTxTypeFilterChange(e.target.value)}
@@ -159,6 +182,25 @@ export default function GraphControlsToolbar({
           </select>
         </div>
 
+        {/* Expansion Radius Hops (1-hop, 2-hop, 3-hop) */}
+        <div className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 rounded-xl px-2 py-0.5 text-[11px] font-mono text-slate-300">
+          <span className="text-[10px] text-slate-400">Hops:</span>
+          {[1, 2, 3].map((h) => (
+            <button
+              key={h}
+              type="button"
+              onClick={() => onHopsChange(h)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
+                hops === h
+                  ? "bg-amber-400 text-slate-950 font-bold"
+                  : "hover:text-white"
+              }`}
+            >
+              {h}
+            </button>
+          ))}
+        </div>
+
         {/* Show Neighbors Only Toggle (when node selected) */}
         <Button
           size="sm"
@@ -170,7 +212,7 @@ export default function GraphControlsToolbar({
               ? "bg-cyan-600 text-white border-cyan-500 font-bold"
               : "bg-slate-900 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
           }`}
-          title="Isolate 1-hop connected neighbors around selected wallet"
+          title="Isolate connected neighbors around selected wallet"
         >
           <Users className="w-3 h-3 mr-1" />
           Neighbors Only
@@ -191,25 +233,6 @@ export default function GraphControlsToolbar({
           <Zap className={`w-3 h-3 mr-1 ${highlightSuspiciousChains ? "text-rose-400" : ""}`} />
           Chains
         </Button>
-
-        {/* Expansion Radius Hops (if in ego view) */}
-        {isEgoView && (
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 rounded-xl px-2 py-0.5 text-[11px] font-mono text-slate-300">
-            <span>Hops:</span>
-            <button
-              onClick={() => onHopsChange(1)}
-              className={`px-1.5 py-0.5 rounded ${hops === 1 ? "bg-amber-400 text-slate-950 font-bold" : "hover:text-white"}`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => onHopsChange(2)}
-              className={`px-1.5 py-0.5 rounded ${hops === 2 ? "bg-amber-400 text-slate-950 font-bold" : "hover:text-white"}`}
-            >
-              2
-            </button>
-          </div>
-        )}
 
         {/* Reset Camera View */}
         <Button

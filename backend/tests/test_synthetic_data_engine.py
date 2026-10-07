@@ -193,3 +193,72 @@ def test_zero_pii_compliance(datasets):
     # Wallet numbers follow synthetic standard
     for w_num in df_wallets["wallet_number"]:
         assert any(w_num.startswith(p) for p in ["W-PERS-", "W-AGNT-", "W-MRCH-", "W-MULE-"])
+
+
+def test_transaction_typologies_and_evidence_features(datasets):
+    """Verify explicit typology metadata and evidence features for all 7 fraud patterns."""
+    import json
+    import ast
+
+    # 1. Typology metadata contract check
+    typology_meta_path = SYNTHETIC_DIR / "typologies.json"
+    assert typology_meta_path.exists(), f"Missing {typology_meta_path}"
+    with open(typology_meta_path, "r", encoding="utf-8") as f:
+        typologies_data = json.load(f)
+
+    expected_7_typologies = {
+        "ACCOUNT_TAKEOVER",
+        "MULE_NETWORK",
+        "SMURFING",
+        "SOCIAL_ENGINEERING",
+        "AGENT_CASHOUT_ABUSE",
+        "NOCTURNAL_CASHOUT",
+        "RAPID_FUND_MOVEMENT"
+    }
+    assert expected_7_typologies.issubset(set(typologies_data.keys()))
+
+    # 2. Transaction column checks
+    df_tx = datasets["transactions"]
+    assert "typology" in df_tx.columns
+    assert "evidence_features" in df_tx.columns
+
+    # 3. All 7 typologies generated in synthetic data
+    generated_typologies = set(df_tx["typology"].dropna().unique())
+    assert expected_7_typologies.issubset(generated_typologies), (
+        f"Missing typologies: {expected_7_typologies - generated_typologies}"
+    )
+
+    # 4. Evidence features present on all fraudulent transactions
+    fraud_txs = df_tx[df_tx["is_fraud"] == 1]
+    all_observed_evidence_features = set()
+
+    for _, row in fraud_txs.iterrows():
+        ef_val = row["evidence_features"]
+        if isinstance(ef_val, str):
+            try:
+                feats = ast.literal_eval(ef_val)
+            except Exception:
+                feats = json.loads(ef_val)
+        else:
+            feats = ef_val
+
+        assert isinstance(feats, list), f"Evidence features must be list, got {type(feats)}"
+        assert len(feats) > 0, f"Fraudulent tx {row['id']} has empty evidence features!"
+        all_observed_evidence_features.update(feats)
+
+    # 5. Core evidence feature dimensions present in synthetic universe
+    expected_evidence_signals = {
+        "new_device",
+        "new_recipient",
+        "unusual_hour",
+        "amount_deviation",
+        "high_transaction_velocity",
+        "rapid_cash_out",
+        "many_inbound_wallets",
+        "many_outbound_wallets",
+        "agent_abnormality"
+    }
+    assert expected_evidence_signals.issubset(all_observed_evidence_features), (
+        f"Missing evidence features: {expected_evidence_signals - all_observed_evidence_features}"
+    )
+

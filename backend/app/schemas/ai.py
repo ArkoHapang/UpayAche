@@ -16,6 +16,25 @@ class AIInvestigationRequest(BaseModel):
         default=None,
         description="Optional analyst investigation prompt or suggested question"
     )
+    language: Optional[str] = Field(
+        default="auto",
+        description="Response language preference: 'auto', 'en', 'bn'"
+    )
+
+
+class FactsFromEvidence(BaseModel):
+    """Empirical, immutable facts extracted directly from database and ML outputs. ZERO AI HALLUCINATION."""
+    wallet_ids: List[str] = Field(default_factory=list, description="Verified wallet identifiers from database")
+    transaction_ids: List[str] = Field(default_factory=list, description="Verified transaction hashes/IDs")
+    amounts: List[str] = Field(default_factory=list, description="Exact transaction amounts recorded in ledger")
+    timestamps: List[str] = Field(default_factory=list, description="Exact transaction/event timestamps")
+    risk_signals: List[str] = Field(default_factory=list, description="Pre-computed XGBoost, Isolation Forest, and NetworkX signals")
+
+
+class AIInterpretation(BaseModel):
+    """Probabilistic AI reasoning and compliance guidance. Subject to analyst verification."""
+    likely_explanation: str = Field(..., description="AI synthesis of the probable fraud mechanism or behavior")
+    investigation_recommendation: List[str] = Field(default_factory=list, description="Advisory next steps for human investigators")
 
 
 class GeminiInvestigationReport(BaseModel):
@@ -55,6 +74,38 @@ class GeminiInvestigationReport(BaseModel):
     recommended_actions: List[str] = Field(
         ...,
         description="Human compliance recommendations."
+    )
+    facts_from_evidence: Optional[FactsFromEvidence] = Field(
+        default=None,
+        description="Strictly verified empirical facts (wallet IDs, tx IDs, amounts, timestamps, risk signals)"
+    )
+    ai_interpretation: Optional[AIInterpretation] = Field(
+        default=None,
+        description="AI synthesis (likely explanation, investigation recommendations)"
+    )
+    what_happened: Optional[str] = Field(
+        default=None,
+        description="Factual summary of the recorded event"
+    )
+    why_risky: Optional[str] = Field(
+        default=None,
+        description="Analytical explanation of why this activity is suspicious"
+    )
+    what_to_investigate_next: List[str] = Field(
+        default_factory=list,
+        description="Concrete, actionable investigation checklist for authorized analysts"
+    )
+    bangla_summary: Optional[str] = Field(
+        default=None,
+        description="Bangla-friendly explanation of the risk and recommended actions"
+    )
+    bangla_explanation: Optional[str] = Field(
+        default=None,
+        description="Comprehensive Bangla intelligence explanation"
+    )
+    advisory_label: str = Field(
+        default="AI-generated investigation assistance. Verify all conclusions against the evidence. Final decisions remain with authorized analysts.",
+        description="Mandatory human-in-the-loop advisory label"
     )
 
 

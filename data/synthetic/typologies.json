@@ -1,0 +1,81 @@
+{
+  "ACCOUNT_TAKEOVER": {
+    "code": "ACCOUNT_TAKEOVER",
+    "name": "Account Takeover",
+    "name_bn": "\u0985\u09cd\u09af\u09be\u0995\u09be\u0989\u09a8\u09cd\u099f \u099f\u09c7\u0995\u0993\u09ad\u09be\u09b0 / \u09b8\u09bf\u09ae \u09b8\u09cb\u09af\u09bc\u09be\u09aa",
+    "description": "Unauthorized access or SIM swap where an unrecognized hardware device accesses the wallet and rapidly initiates high-value transfers or balance depletion.",
+    "evidence_features": [
+      "new_device",
+      "new_recipient",
+      "amount_deviation",
+      "high_transaction_velocity"
+    ]
+  },
+  "MULE_NETWORK": {
+    "code": "MULE_NETWORK",
+    "name": "Mule Network",
+    "name_bn": "\u09ae\u09bf\u0989\u09b2 \u09a8\u09c7\u099f\u0993\u09af\u09bc\u09be\u09b0\u09cd\u0995 / \u09b8\u09be\u0987\u0995\u09cd\u09b2\u09bf\u0995 \u099f\u09cd\u09b0\u09c7\u0987\u09b2",
+    "description": "Multi-hop layering relay chains, circular cycles, or coordinated mule syndicates distributing illicit funds across intermediate wallets.",
+    "evidence_features": [
+      "many_outbound_wallets",
+      "many_inbound_wallets",
+      "high_transaction_velocity",
+      "rapid_cash_out"
+    ]
+  },
+  "SMURFING": {
+    "code": "SMURFING",
+    "name": "Smurfing / Transaction Splitting",
+    "name_bn": "\u09b8\u09cd\u09ae\u09be\u09b0\u09cd\u09ab\u09bf\u0982 / \u09b2\u09c7\u09a8\u09a6\u09c7\u09a8 \u09ac\u09bf\u09ad\u09be\u099c\u09a8",
+    "description": "Structuring multiple below-threshold inflows into a single aggregator account to evade regulatory reporting thresholds.",
+    "evidence_features": [
+      "many_inbound_wallets",
+      "amount_deviation",
+      "high_transaction_velocity"
+    ]
+  },
+  "SOCIAL_ENGINEERING": {
+    "code": "SOCIAL_ENGINEERING",
+    "name": "Social Engineering",
+    "name_bn": "\u09b8\u09cb\u09b6\u09cd\u09af\u09be\u09b2 \u0987\u099e\u09cd\u099c\u09bf\u09a8\u09bf\u09af\u09bc\u09be\u09b0\u09bf\u0982 / \u09ad\u09c1\u09af\u09bc\u09be \u09b0\u09bf\u09ad\u09be\u09b0\u09cd\u09b8\u09be\u09b2",
+    "description": "Victim manipulated into transferring funds via fake lottery, impersonation, or erroneous transfer ('\u09ad\u09c1\u09b2 \u0995\u09b0\u09c7 \u099f\u09be\u0995\u09be \u0997\u09c7\u099b\u09c7') scams.",
+    "evidence_features": [
+      "new_recipient",
+      "amount_deviation",
+      "rapid_cash_out"
+    ]
+  },
+  "AGENT_CASHOUT_ABUSE": {
+    "code": "AGENT_CASHOUT_ABUSE",
+    "name": "Agent Cash-out Abuse",
+    "name_bn": "\u098f\u099c\u09c7\u09a8\u09cd\u099f \u0995\u09cd\u09af\u09be\u09b6-\u0986\u0989\u099f \u0985\u09aa\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0",
+    "description": "Rapid liquidity drain or collusive high-volume liquidation through an agent POS cash-out point exceeding baseline limits.",
+    "evidence_features": [
+      "rapid_cash_out",
+      "agent_abnormality",
+      "amount_deviation"
+    ]
+  },
+  "NOCTURNAL_CASHOUT": {
+    "code": "NOCTURNAL_CASHOUT",
+    "name": "Nocturnal Cash-out",
+    "name_bn": "\u0997\u09ad\u09c0\u09b0 \u09b0\u09be\u09a4\u09c7\u09b0 \u0985\u09b8\u09cd\u09ac\u09be\u09ad\u09be\u09ac\u09bf\u0995 \u0995\u09cd\u09af\u09be\u09b6-\u0986\u0989\u099f",
+    "description": "High-value cash-out executed during dead hours (01:00 AM \u2013 05:00 AM) deviating sharply from daytime baseline.",
+    "evidence_features": [
+      "unusual_hour",
+      "rapid_cash_out",
+      "amount_deviation"
+    ]
+  },
+  "RAPID_FUND_MOVEMENT": {
+    "code": "RAPID_FUND_MOVEMENT",
+    "name": "Rapid Fund Movement",
+    "name_bn": "\u09a6\u09cd\u09b0\u09c1\u09a4 \u09ab\u09be\u09a8\u09cd\u09a1 \u09b8\u09cd\u09a5\u09be\u09a8\u09be\u09a8\u09cd\u09a4\u09b0",
+    "description": "High-velocity bursts of transfers with minimal account resting time between inbound and outbound flows.",
+    "evidence_features": [
+      "high_transaction_velocity",
+      "rapid_cash_out",
+      "amount_deviation"
+    ]
+  }
+}

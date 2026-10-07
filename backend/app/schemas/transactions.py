@@ -21,6 +21,8 @@ class TransactionResponse(BaseModel):
     pattern_id: Optional[int] = None
     pattern_code: Optional[str] = None
     pattern_name: Optional[str] = None
+    typology: Optional[str] = None
+    evidence_features: Optional[List[str]] = None
     is_fraud: int = 0
     is_anomaly: int = 0
     risk_score: float = 0.08

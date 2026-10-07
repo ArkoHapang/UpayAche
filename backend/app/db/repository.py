@@ -61,11 +61,30 @@ class DataRepository:
                 for _, row in df_tx.iterrows():
                     t_dict = row.to_dict()
                     t_id = str(t_dict["id"])
-                    # Standardize types
                     t_dict["amount"] = float(t_dict.get("amount", 0.0))
                     t_dict["fee"] = float(t_dict.get("fee", 0.0))
                     t_dict["is_fraud"] = int(t_dict.get("is_fraud", 0))
                     t_dict["is_anomaly"] = int(t_dict.get("is_anomaly", 0))
+
+                    typ = t_dict.get("typology")
+                    if pd.isna(typ) or typ in ("NORMAL", "NONE"):
+                        t_dict["typology"] = None
+                    else:
+                        t_dict["typology"] = str(typ)
+
+                    ef = t_dict.get("evidence_features")
+                    if isinstance(ef, str):
+                        try:
+                            import ast
+                            t_dict["evidence_features"] = ast.literal_eval(ef)
+                        except Exception:
+                            try:
+                                t_dict["evidence_features"] = json.loads(ef)
+                            except Exception:
+                                t_dict["evidence_features"] = [s.strip() for s in ef.split(",") if s.strip()]
+                    elif not isinstance(ef, list):
+                        t_dict["evidence_features"] = []
+
                     self.transactions[t_id] = t_dict
                 logger.info(f"Loaded {len(self.transactions)} transactions from {tx_path}")
             else:
